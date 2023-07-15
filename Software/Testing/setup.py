@@ -63,7 +63,7 @@ keys = keypad.Keys(keyswitch_pins, value_when_pressed=False, pull=True)
 #neopixels.fill(OFF_COLOR)
 
 # Setup rotary encoders
-encoder_1 = rotaryio.IncrementalEncoder(board.GP4, board.GP5)
+encoder_1 = rotaryio.IncrementalEncoder(board.GP4, board.GP5, divisor = 4)
 
 # MIDI setup
 midi_uart = io.UART(tx=board.GP8, baudrate=31250)
