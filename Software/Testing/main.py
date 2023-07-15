@@ -1,4 +1,6 @@
-from setup import neopixels, keys, led, display, encoder_1, enc_buttons, midi_serial
+from setup import *
+from os import listdir
+import os
 import displayio
 import terminalio
 from adafruit_display_text import label
@@ -11,6 +13,8 @@ import audiocore
 import audiomixer
 from adafruit_midi.note_on import NoteOn
 from adafruit_midi.note_off import NoteOff
+from adafruit_led_animation.animation.rainbow import Rainbow
+from adafruit_led_animation.animation.rainbowchase import RainbowChase
 
 
 # Setup audio
@@ -150,6 +154,90 @@ def send_cc(number, val):
     midi_serial.send(ControlChange(number, val))
 
 
+# Menu Functions
+def get_files():
+    """Get a list of Python files in the root folder of the Pico"""
+
+    files = listdir()
+    menu = []
+    for file in files:
+        if file.endswith(".py"):
+            menu.append(file)
+
+    return menu
+
+
+def show_menu(menu):
+    """Shows the menu on the screen"""
+
+    display_group = displayio.Group()
+    # bring in the global variables
+    global line, highlight, shift, list_length
+
+    # menu variables
+    item = 1
+    line = 1
+
+    color_bitmap = displayio.Bitmap(width, line_height, 1)
+    color_palette = displayio.Palette(1)
+    color_palette[0] = 0xFFFFFF  # White
+
+    # Shift the list of files so that it shows on the display
+    list_length = len(menu)
+    short_list = menu[shift : shift + total_lines]
+
+    for item in short_list:
+        if highlight == line:
+            white_rectangle = displayio.TileGrid(
+                color_bitmap,
+                pixel_shader=color_palette,
+                x=0,
+                y=((line - 1) * line_height),
+            )
+            display_group.append(white_rectangle)
+            text_arrow = ">"
+            text_arrow = label.Label(
+                terminalio.FONT,
+                text=text_arrow,
+                color=0x000000,
+                x=0,
+                y=((line - 1) * line_height) + offset,
+            )
+            display_group.append(text_arrow)
+            text_item = label.Label(
+                terminalio.FONT,
+                text=item,
+                color=0x000000,
+                x=10,
+                y=((line - 1) * line_height) + offset,
+            )
+            display_group.append(text_item)
+        else:
+            text_item = label.Label(
+                terminalio.FONT,
+                text=item,
+                color=0xFFFFFF,
+                x=10,
+                y=((line - 1) * line_height) + offset,
+            )
+            display_group.append(text_item)
+        line += 1
+    display.show(display_group)
+
+
+def launch(filename):
+    """Launch the Python script <filename>"""
+    global file_list
+    time.sleep(3)
+    exec(open(filename).read())
+    show_menu(file_list)
+
+
+# Get the list of Python files and display the menu
+file_list = get_files()
+show_menu(file_list)
+
+
 class State(object):
     def __init__(self):
         pass
@@ -246,6 +334,15 @@ class StartupState(State):
         State.exit(self, machine)
 
     def update(self, machine):
+        neopixels.fill((0, 0, 0))
+        text = "DCZia\nElectric Sampler"
+        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=5)
+        display.show(text_area)
+        time.sleep(2)
+        text = "Fueled by Green Chile\nand Solder"
+        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=10)
+        display.show(text_area)
+        time.sleep(2)
         # Code for any startup animations, etc.
         for i in range(0, 8):
             neopixels[i] = (0, 255, 0)
@@ -256,6 +353,8 @@ class StartupState(State):
 
 
 class MenuState(State):
+    last_position = 0
+
     @property
     def name(self):
         return "menu"
@@ -268,13 +367,95 @@ class MenuState(State):
 
     def update(self, machine):
         # Code for moving through menu and selecting mode
-        text = "DCZia Sampler"
+        mode_select = False
+        mode = "flashy"
+        text = '1. Flashy Mode'
         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
         display.show(text_area)
-        mode_select = False
-        while mode_select == False:
+        rainbow = Rainbow(neopixels, speed=0.1)
+        global highlight, shift
+        show_menu(file_list)
+        """
+        while True:
+            rainbow.animate()
+            if self.last_position is not encoder_1.position:
+                if encoder_1.position < self.last_position:
+                    if highlight > 1:
+                        highlight -= 1
+                    else:
+                        if shift > 0:
+                            shift -= 1
+                    print("> " + file_list[highlight - 1 + shift])
+                    # show_menu(file_list)
+                else:
+                    if highlight < total_lines:
+                        highlight += 1
+                    else:
+                        if shift + total_lines < list_length:
+                            shift += 1
+                    print("> " + file_list[highlight - 1 + shift])
+                show_menu(file_list)
+            self.last_position = encoder_1.position
+
+            # Check for button pressed
+            enc_buttons_event = enc_buttons.events.get()
+            if enc_buttons_event and enc_buttons_event.pressed:
+                print("Button Pressed)")
+                print("Launching", file_list[highlight - 1 + shift])
+
+                # execute script
+                launch(file_list[(highlight - 1) + shift])
+                print("Returned from launch")
+        """
+        while mode_select is False:
+            rainbow.animate()
             # Some code here to use an encoder to scroll through menu options, press to select one
-            mode = "flashy"
+            position = encoder_1.position
+
+            if position > self.last_position:
+                if mode == 'flashy':
+                    mode = 'sequencer'
+                    text = '2. Sequencer'
+                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+                    display.show(text_area)
+                elif mode == 'sequencer':
+                    mode = 'sampler'
+                    text = '3. Sampler'
+                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+                    display.show(text_area)
+                elif mode == 'sampler':
+                    mode = 'midi_controller'
+                    text = '4. MIDI Controller'
+                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+                    display.show(text_area)
+                elif mode == 'midi_controller':
+                    mode = 'flashy'
+                    text = '1. Flashy Mode'
+                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+                    display.show(text_area)
+            if self.last_position > position:
+                if mode == 'flashy':
+                    mode = 'midi_controller'
+                    text = '4. MIDI Controller'
+                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+                    display.show(text_area)
+                elif mode == 'sequencer':
+                    mode = 'flashy'
+                    text = '1. Flashy Mode'
+                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+                    display.show(text_area)
+                elif mode == 'sampler':
+                    mode = 'sequencer'
+                    text = '2. Sequencer'
+                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+                    display.show(text_area)
+                elif mode == 'midi_controller':
+                    mode = 'sampler'
+                    text = '3. Sampler'
+                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+                    display.show(text_area)
+            self.last_position = position
+
             enc_buttons_event = enc_buttons.events.get()
             if enc_buttons_event and enc_buttons_event.pressed:
                 if mode == "sequencer":
@@ -304,8 +485,11 @@ class SequencerState(State):
 
     def update(self, machine):
         # Sequencer code
+        text = "Sequencer"
+        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+        display.show(text_area)
         run_sequencer = True
-        while run_midi == True:
+        while run_sequencer is True:
             # send_note_on(1,4)
             # time.sleep(1.5)
             # send_note_off(1,4)
@@ -316,8 +500,9 @@ class SequencerState(State):
             # time.sleep(1.5)
             enc_buttons_event = enc_buttons.events.get()
             if enc_buttons_event and enc_buttons_event.pressed:
-                machine.go_to_state("flashy")
-                run_midi = False
+                run_sequencer = False
+                machine.go_to_state("menu")
+
 
 
 class SamplerState(State):
@@ -353,7 +538,6 @@ class SamplerState(State):
             if enc_buttons_event and enc_buttons_event.pressed:
                 machine.go_to_state("menu")
                 sequencer_play = False
-
                 """
                 else:
                     print('exit')
@@ -378,6 +562,8 @@ class MIDIState(State):
         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
         display.show(text_area)
 
+        neopixels.fill((255, 0, 0))
+        neopixels.show()
         run_midi = True
         while run_midi == True:
             key_event = keys.events.get()
@@ -386,20 +572,23 @@ class MIDIState(State):
                     key = key_event.key_number
                     send_note_on(key, 4)
                     neopixels[key] = (0, 0, 255)
-
+                    neopixels.show()
                 if key_event.released:
                     key = key_event.key_number
                     send_note_off(key, 4)
                     neopixels[key] = (255, 0, 0)
+                    neopixels.show()
 
             enc_buttons_event = enc_buttons.events.get()
             enc_buttons.events.clear()
             if enc_buttons_event and enc_buttons_event.pressed:
-                machine.go_to_state("sampler")
+                machine.go_to_state("menu")
                 run_midi = False
 
 
 class FlashyState(State):
+    last_position = encoder_1.position
+
     @property
     def name(self):
         return "flashy"
@@ -411,20 +600,44 @@ class FlashyState(State):
         State.exit(self, machine)
 
     def update(self, machine):
-        text = "Flashy Mode"
+        party = True
+        choices = ["rainbow", "rainbow_chase"]
+        i = 0
+        selection = choices[i]
+        text = "Rainbow"
         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
         display.show(text_area)
-        party = True
-        while party == True:
-            for i in range(0, 8):
-                neopixels[i] = (0, 0, 255)
-                time.sleep(0.2)
-            neopixels.fill((255, 0, 0))
-            time.sleep(0.2)
+        rainbow = Rainbow(neopixels, speed=0.1)
+        rainbow_chase = RainbowChase(neopixels, speed=0.1, size=5, spacing=3)
+        while party is True:
+            position = encoder_1.position
+            if position > self.last_position:
+                if i == len(choices):
+                    i = 0
+                selection = choices[i]
+                i += 1
+                if selection == "rainbow":
+                    text = "Rainbow"
+                    text_area = label.Label(
+                        terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
+                    )
+                    display.show(text_area)
+                    rainbow_chase.freeze()
+                    rainbow.animate()
+                if selection == "rainbow_chase":
+                    text = "Rainbow Chase"
+                    text_area = label.Label(
+                        terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
+                    )
+                    display.show(text_area)
+                    rainbow.freeze()
+                    rainbow_chase.animate()
+
             enc_buttons_event = enc_buttons.events.get()
             if enc_buttons_event and enc_buttons_event.pressed:
-                machine.go_to_state("flashy")
-                machine.go_to_state("midi_controller")
+                neopixels.fill((255, 0, 0))
+                neopixels.show()
+                machine.go_to_state("menu")
                 party = False
 
 

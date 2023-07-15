@@ -22,13 +22,22 @@ import adafruit_displayio_ssd1306
 # OLED Screen
 displayio.release_displays()
 i2c = io.I2C(board.GP15, board.GP14)
+width = 128
+height = 32
+line = 1
+line_height = 10
+offset = 5
+highlight = 1
+shift = 0
+list_length = 0
+total_lines = 3
 display_bus = displayio.I2CDisplay(i2c, device_address=0x3C)
-display = adafruit_displayio_ssd1306.SSD1306(display_bus, width=128, height=32)
+display = adafruit_displayio_ssd1306.SSD1306(display_bus, width=width, height=height)
 
 # Neopixels
 pixel_pin = board.GP28
 num_pixels = 8
-neopixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.01)
+neopixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.1, auto_write=True)
 
 # Board LED
 led = digitalio.DigitalInOut(board.LED)
@@ -65,7 +74,11 @@ keys = keypad.Keys(keyswitch_pins, value_when_pressed=False, pull=True)
 # neopixels.fill(OFF_COLOR)
 
 # Setup rotary encoders
-encoder_1 = rotaryio.IncrementalEncoder(board.GP4, board.GP5)
+encoder_1 = rotaryio.IncrementalEncoder(board.GP4, board.GP5, 4)
+
+# for tracking the direction and button state
+previous_value = True
+button_down = False
 
 # MIDI setup
 midi_uart = io.UART(tx=board.GP8, baudrate=31250)
