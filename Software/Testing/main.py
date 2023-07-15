@@ -12,6 +12,8 @@ import audiocore
 import audiomixer
 from adafruit_midi.note_on import NoteOn
 from adafruit_midi.note_off import NoteOff
+from adafruit_led_animation.animation.rainbow import Rainbow
+from adafruit_led_animation.animation.rainbowchase import RainbowChase
 
 
 # Setup audio
@@ -218,11 +220,12 @@ class StartupState(State):
         State.exit(self, machine)
 
     def update(self, machine):
+        neopixels.fill((0,0,0))
         text = 'DCZia\nElectric Sampler'
         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=5)
         display.show(text_area)
         time.sleep(2)
-        text = 'Fueld by Green Chile\nand Solder'
+        text = 'Fueled by Green Chile\nand Solder'
         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=10)
         display.show(text_area)
         time.sleep(2)
@@ -235,7 +238,9 @@ class StartupState(State):
         machine.go_to_state('menu')
 
 class MenuState(State):
-  
+
+    last_position = 0
+
     @property
     def name(self):
         return 'menu'
@@ -249,75 +254,73 @@ class MenuState(State):
     def update(self, machine):
         # Code for moving through menu and selecting mode
         mode_select = False
-        last_position = 0
         mode = 'flashy'
-        text = 'Main Menu'
+        text = '1. Flashy Mode'
         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
         display.show(text_area)
+
         while mode_select is False:
             # Some code here to use an encoder to scroll through menu options, press to select one
             position = encoder_1.position
 
-            if last_position == None or position != last_position:
-                if position > last_position:
-                    if mode == 'flashy':
-                        mode = 'sequencer'
-                        text = 'Sequencer'
-                        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-                        display.show(text_area)
-                    elif mode == 'sequencer':
-                        mode = 'sampler'
-                        text = 'Sampler'
-                        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-                        display.show(text_area)
-                    elif mode == 'sampler':
-                        mode = 'midi_controller'
-                        text = 'MIDI Controller'
-                        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-                        display.show(text_area)
-                    elif mode == 'midi_controller':
-                        mode = 'flashy'
-                        text = 'Flashy Mode'
-                        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-                        display.show(text_area)
-                if last_position > position:
-                    if mode == 'flashy':
-                        mode = 'midi_controller'
-                        text = 'MIDI Controller'
-                        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-                        display.show(text_area)
-                    elif mode == 'sequencer':
-                        mode = 'flashy'
-                        text = 'Flashy Mode'
-                        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-                        display.show(text_area)
-                    elif mode == 'sampler':
-                        mode = 'sequencer'
-                        text = 'Sequencer'
-                        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-                        display.show(text_area)
-                    elif mode == 'midi_controller':
-                        mode = 'sampler'
-                        text = 'Sampler'
-                        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-                        display.show(text_area)
-            last_position = position
+            if position > self.last_position:
+                if mode == 'flashy':
+                    mode = 'sequencer'
+                    text = '2. Sequencer'
+                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+                    display.show(text_area)
+                elif mode == 'sequencer':
+                    mode = 'sampler'
+                    text = '3. Sampler'
+                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+                    display.show(text_area)
+                elif mode == 'sampler':
+                    mode = 'midi_controller'
+                    text = '4. MIDI Controller'
+                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+                    display.show(text_area)
+                elif mode == 'midi_controller':
+                    mode = 'flashy'
+                    text = '1. Flashy Mode'
+                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+                    display.show(text_area)
+            if self.last_position > position:
+                if mode == 'flashy':
+                    mode = 'midi_controller'
+                    text = '4. MIDI Controller'
+                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+                    display.show(text_area)
+                elif mode == 'sequencer':
+                    mode = 'flashy'
+                    text = '1. Flashy Mode'
+                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+                    display.show(text_area)
+                elif mode == 'sampler':
+                    mode = 'sequencer'
+                    text = '2. Sequencer'
+                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+                    display.show(text_area)
+                elif mode == 'midi_controller':
+                    mode = 'sampler'
+                    text = '3. Sampler'
+                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+                    display.show(text_area)
+            self.last_position = position
 
             enc_buttons_event = enc_buttons.events.get()
             if enc_buttons_event and enc_buttons_event.pressed:
-                if mode is'sequencer':
+                if mode == 'sequencer':
                     machine.go_to_state('sequencer')
                     mode_select = True
-                if mode is 'sampler':
+                if mode == 'sampler':
                     machine.go_to_state('sampler')
                     mode_select = True
-                if mode is 'midi_controller':
+                if mode == 'midi_controller':
                     machine.go_to_state('midi_controller')
                     mode_select = True
-                if mode is 'flashy':
+                if mode == 'flashy':
                     machine.go_to_state('flashy')
                     mode_select = True
-        
 
 class SequencerState(State):
   
@@ -333,8 +336,11 @@ class SequencerState(State):
 
     def update(self, machine):
         # Sequencer code
+        text = 'Sequencer'
+        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+        display.show(text_area)
         run_sequencer = True
-        while run_midi == True:
+        while run_sequencer is True:
             #send_note_on(1,4)
             #time.sleep(1.5)
             #send_note_off(1,4)
@@ -345,9 +351,8 @@ class SequencerState(State):
             #time.sleep(1.5)
             enc_buttons_event = enc_buttons.events.get()
             if enc_buttons_event and enc_buttons_event.pressed:
-                machine.go_to_state('flashy')
-                run_midi = False
-
+                run_sequencer = False
+                machine.go_to_state('menu')
 
 class SamplerState(State):
   
@@ -383,7 +388,6 @@ class SamplerState(State):
             if enc_buttons_event and enc_buttons_event.pressed:
                 machine.go_to_state('menu')
                 sequencer_play = False
-
                 '''
                 else:
                     print('exit')
@@ -408,6 +412,8 @@ class MIDIState(State):
         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
         display.show(text_area)
 
+        neopixels.fill((255,0,0))
+        neopixels.show()
         run_midi = True
         while run_midi == True:
             key_event = keys.events.get()
@@ -416,17 +422,20 @@ class MIDIState(State):
                     key = key_event.key_number
                     send_note_on(key,4)
                     neopixels[key] = (0,0,255)
+                    neopixels.show()
 
                 if key_event.released:
                     key = key_event.key_number
                     send_note_off(key,4)
                     neopixels[key] = (255,0,0)
+                    neopixels.show()
 
             enc_buttons_event = enc_buttons.events.get()
             enc_buttons.events.clear()
             if enc_buttons_event and enc_buttons_event.pressed:
-                machine.go_to_state('sampler')
+                machine.go_to_state('menu')
                 run_midi = False
+
 
 class FlashyState(State):
   
@@ -441,21 +450,18 @@ class FlashyState(State):
         State.exit(self, machine)
 
     def update(self, machine):
-
+        party = True
         text = 'Flashy Mode'
         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
         display.show(text_area)
-        party = True
-        while party == True:
-            for i in range(0,8):
-                neopixels[i] = (0,0,255)
-                time.sleep(.2)
-            neopixels.fill((255,0,0))
-            time.sleep(.2)
+        rainbow = Rainbow(neopixels, speed = 0.1)
+        while party is True:
+            rainbow.animate()
             enc_buttons_event = enc_buttons.events.get()
             if enc_buttons_event and enc_buttons_event.pressed:
-                machine.go_to_state('flashy')
-                machine.go_to_state('midi_controller')
+                neopixels.fill((255,0,0))
+                neopixels.show()
+                machine.go_to_state('menu')
                 party = False
 
 

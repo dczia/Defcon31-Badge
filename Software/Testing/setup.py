@@ -26,7 +26,7 @@ display = adafruit_displayio_ssd1306.SSD1306(display_bus, width=128, height=32)
 # Neopixels
 pixel_pin = board.GP28
 num_pixels = 8
-neopixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.01)
+neopixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.1, auto_write=True)
 
 # Board LED
 led = digitalio.DigitalInOut(board.LED)
@@ -63,7 +63,7 @@ keys = keypad.Keys(keyswitch_pins, value_when_pressed=False, pull=True)
 #neopixels.fill(OFF_COLOR)
 
 # Setup rotary encoders
-encoder_1 = rotaryio.IncrementalEncoder(board.GP4, board.GP5, divisor = 4)
+encoder_1 = rotaryio.IncrementalEncoder(board.GP4, board.GP5)
 
 # MIDI setup
 midi_uart = io.UART(tx=board.GP8, baudrate=31250)
