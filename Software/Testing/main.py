@@ -259,28 +259,23 @@ class MenuState(State):
             position = encoder_1.position
 
             if last_position == None or position != last_position:
-                print('Position: ' + str(position) + 'Last Position: ' + str(last_position))
                 if position > last_position:
                     if mode == 'flashy':
-                        print('increase in flashy')
                         mode = 'sequencer'
                         text = 'Sequencer'
                         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
                         display.show(text_area)
                     elif mode == 'sequencer':
-                        print('increase in sequencer')
                         mode = 'sampler'
                         text = 'Sampler'
                         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
                         display.show(text_area)
                     elif mode == 'sampler':
-                        print('increase in sampler')
                         mode = 'midi_controller'
                         text = 'MIDI Controller'
                         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
                         display.show(text_area)
                     elif mode == 'midi_controller':
-                        print('increase in midi_controller')
                         mode = 'flashy'
                         text = 'Flashy Mode'
                         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
@@ -302,7 +297,6 @@ class MenuState(State):
                         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
                         display.show(text_area)
                     elif mode == 'midi_controller':
-                        print('decrease in midi_controller')
                         mode = 'sampler'
                         text = 'Sampler'
                         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
