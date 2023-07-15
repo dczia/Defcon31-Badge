@@ -4,4 +4,5 @@
   (lib (name "MCU_RaspberryPi_and_Boards")(type "KiCad")(uri "${KIPRJMOD}/lib_sch/MCU_RaspberryPi_and_Boards.kicad_sym")(options "")(descr ""))
   (lib (name "47257-0001")(type "KiCad")(uri "${KIPRJMOD}/lib_sch/47257-0001.kicad_sym")(options "")(descr ""))
   (lib (name "TPS61023")(type "KiCad")(uri "${KIPRJMOD}/lib_sch/TPS61023.kicad_sym")(options "")(descr ""))
+  (lib (name "SK6812-SIDE")(type "KiCad")(uri "${KIPRJMOD}/lib_sch/SK6812-SIDE.kicad_sym")(options "")(descr ""))
 )
