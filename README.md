@@ -27,6 +27,7 @@ The DCZia Electric Sampler - A eurorack format sampler and step sequencer in a b
 
 
 ## Todo
+
 [ ] Add Main Menu
 
 [ ] Improve Input Control Flow Between States
@@ -66,6 +67,8 @@ The DCZia Electric Sampler - A eurorack format sampler and step sequencer in a b
 
     All prototype buttons functional, minimal code for actually controlling flow complete
     Library includes matrix inputs for final product
+
+[ ] Add Documentation Here.
 
 [ ] ...
 
