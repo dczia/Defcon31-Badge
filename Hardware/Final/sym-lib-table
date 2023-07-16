@@ -5,4 +5,5 @@
   (lib (name "47257-0001")(type "KiCad")(uri "${KIPRJMOD}/lib_sch/47257-0001.kicad_sym")(options "")(descr ""))
   (lib (name "TPS61023")(type "KiCad")(uri "${KIPRJMOD}/lib_sch/TPS61023.kicad_sym")(options "")(descr ""))
   (lib (name "SK6812-SIDE")(type "KiCad")(uri "${KIPRJMOD}/lib_sch/SK6812-SIDE.kicad_sym")(options "")(descr ""))
+  (lib (name "badgelife_shitty_addon_v169bis")(type "Legacy")(uri "${KIPRJMOD}/lib_sch/badgelife_shitty_addon_v169bis.lib")(options "")(descr ""))
 )
