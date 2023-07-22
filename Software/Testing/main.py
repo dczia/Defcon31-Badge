@@ -4,9 +4,9 @@ from setup import (
     display,
     encoder_1,
     midi_serial,
-    ControlChange,
-    clk_src,
     total_lines,
+    shift,
+    highlight,
     line_height,
     width,
     offset,
@@ -25,55 +25,84 @@ import audiocore
 import audiomixer
 from adafruit_midi.note_on import NoteOn
 from adafruit_midi.note_off import NoteOff
+from adafruit_midi.control_change import ControlChange
 from adafruit_led_animation.animation.rainbow import Rainbow
 from adafruit_led_animation.animation.rainbowchase import RainbowChase
+
+# import gc
 
 
 # Setup audio
 audio = audiobusio.I2SOut(board.GP0, board.GP1, board.GP2)
-num_voices = 1
+num_voices = 9
 mixer = audiomixer.Mixer(
     voice_count=num_voices,
-    sample_rate=22050,
+    sample_rate=16000,
     channel_count=1,
     bits_per_sample=16,
     samples_signed=True,
 )
-mixer.voice[0].level = 0.2
-wave_file = open("/sd/StreetChicken.wav", "rb")
-wav = audiocore.WaveFile(wave_file)
+
+
+def sequence_selector(value, min_val, max_val, increment, key_val, encoder_pos):
+
+    selection = True
+    vel_change = False
+    # Display current value
+    while selection == True:
+        text = f"Step {key_val}: {value[key_val][1]:.2f}"
+        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=5)
+        display.show(text_area)
+        key_event = keys.events.get()
+
+        # Modify value on encoder input
+        if encoder_pos is not encoder_1.position:
+            if encoder_1.position < encoder_pos:
+                if value[key_val][1] > min_val + increment:
+                    value[key_val][1] = value[key_val][1] - increment
+                else:
+                    value[key_val][1] = min_val
+
+            else:
+                if value[key_val][1] < max_val - increment:
+                    value[key_val][1] = value[key_val][1] + increment
+                else:
+                    value[key_val][1] = max_val
+            encoder_pos = encoder_1.position
+            vel_change = True
+
+        # Exit selection menu if key released
+        if key_event and key_event.released:
+
+            if key_event.key_number == key_val:
+                if vel_change == False:
+                    value[key_val][0] = not value[key_val][0]
+                selection = False
+    return encoder_pos
 
 
 # File sequencer class
 # Sets up a sequence track to play a .wav file sample at regular intervals
 # 8 step sequence tells whether to play
-class fileSequencer:
+class file_sequence:
     def __init__(self):
-        self.clk_src = "int"
-        self.bpm = 120
-        self.fname = "/sd/StreetChicken.wav"
+        self.fname = ""
         self.sequence = [
-            [True, 1],
-            [False, 0],
-            [True, 0.2],
-            [False, 0],
-            [True, 0.4],
-            [False, 0],
-            [True, 1],
-            [False, 0],
+            [False, 0.5],
+            [True, 0.5],
+            [True, 0.5],
+            [True, 0.5],
+            [True, 0.5],
+            [True, 0.5],
+            [True, 0.5],
+            [True, 0.5],
         ]
 
     def select_file(self):
         # Show valid files, select with encoder knob/button
         print("valid files: " + str(os.listdir()))
         fname = "kick.wav"
-
         self.fname = fname
-
-    def set_bpm(self):
-        # Display bpm on screen, select with enc knob/button
-        screen_input = 120
-        self.bpm = screen_input
 
     # Set and store a sequence with True/False indicating steps to play on and int being a velocity value between 0-1
     def set_sequence(self):
@@ -81,21 +110,54 @@ class fileSequencer:
         key_input = [
             [False, 0],
             [False, 0],
+            [True, 0.5],
             [False, 0],
             [False, 0],
+            [True, 0.5],
             [False, 0],
-            [False, 0],
-            [False, 0],
-            [False, 0],
+            [True, 0.5],
         ]
         self.sequence = key_input
 
-    # Velocity will affect playback volume of a given sample in the sequence to add more movement to the sound
-    def set_velocity(self):
-        # Display current vel setting on screen and flash sequence step
-        # Use encoder to select volume, and press to advance
+    def show_sequence(self):
+        for index, item in enumerate(self.sequence):
+            if item[0] == True:
+                neopixels[index] = (0, 0, 255)
+            elif item[0] == False:
+                neopixels[index] = (255, 0, 0)
+            time.sleep(0.01)
+
+
+class run_sequencer:
+    def __init__(self):
+        self.clk_src = "int"
+        self.bpm = 120
+        self.active_sequences = []
+        self.sequence_step = 0
+        self.wav_files = []
+        self.loaded_wavs = []
+        self.step = 0
+        self.play_music = False
+
+    # Add sequences to the active set
+    def add_sequence(self, new_sequence):
+        self.active_sequences.append(new_sequence)
+
+    # Set BPM (needs integration with input, required)
+    def set_bpm(self):
+        # Display bpm on screen, select with enc knob/button
+        screen_input = 120
+        self.bpm = screen_input
+
+    # Write sequence data to file to reload after power on/off (future)
+    def save_sequence(self):
         pass
 
+    # Load sequence from file to reload after power on/off (future)
+    def load_sequence(self):
+        pass
+
+    ### Select where clock is coming from (not critical, but high priority nice-to-have)
     def set_clk_src(self):
         # clk_options = ["ext, midi, int"]
         # Display clk_options on screen, scroll/select
@@ -108,48 +170,66 @@ class fileSequencer:
         elif clk_src == "int":
             pass
 
-    def play_sequence(self):
-        # Calculate time for step
-        step_length = int(1000 // (self.bpm / 60))
-        step_start = ticks_ms()
-        step = 0
-        step_end = step_start + step_length
-        # Load wav file
-        wave_file = open(self.fname, "rb")
-        # wav = audiocore.WaveFile(wave_file)
+    def play_step(self):
 
-        seq_loop = True
-        while seq_loop is True:
-            # Helpful output for troubleshooting
-            # print('Step ' + str(step) + ': ' + str(self.sequence[step][0]) + ', ' + str(self.sequence[step][1]))
+        # Calculate step duration
+        self.step_start = ticks_ms()
+        self.step_end = self.step_start + self.step_length
 
-            # Play notes that are set to true in seq array
-            if self.sequence[step][0] is True:
-                wav = audiocore.WaveFile(wave_file)
+        # Loop through active sequences and play indicated steps
+        for index, item in enumerate(self.active_sequences):
+            if item.sequence[self.step][0] == True:
+                # Set volume based on input value
+                mixer.voice[index].level = item.sequence[self.step][1]
+                mixer.voice[index].play(self.loaded_wavs[index])
 
-                # Set volume based on 'velocity' parameter
-                mixer.voice[0].level = self.sequence[step][1]
-                mixer.voice[0].play(wav)
+        # Cycle sequencer LED
+        # neopixels[self.step] = (255,0,0)
+        time.sleep(0.05)
+        neopixels[self.step] = (0, 0, 255)
 
-            # Wait for beat duration and watch for stop
-            while ticks_ms() < step_end:
-                key_event = keys.events.get()
-                if key_event and key_event.pressed:
-                    if audio.playing is True:
-                        audio.stop()
-                        seq_loop = False
+        # Wait for beat duration and watch for stop
+        while ticks_ms() < self.step_end:
 
-            # End audio at end of beat duration
-            mixer.voice[0].stop()
+            ### Update to play/pause button for final hardware
+            enc_buttons_event = enc_buttons.events.get()
+            if enc_buttons_event and enc_buttons_event.pressed:
+                for index, item in enumerate(self.active_sequences):
+                    mixer.voice[index].stop
+                self.play_music = False
 
-            # Increment step and restart sequence if needed
-            if step < 7:
-                step += 1
+            # Stop output at end of step duration
             else:
-                step = 0
-            step_start = step_end
-            step_end = step_start + step_length
+                for index, item in enumerate(self.active_sequences):
+                    mixer.voice[index].stop
+        neopixels.fill((255, 0, 0))
 
+    # Update step
+    def step_update(self):
+        if self.step < 7:
+            self.step += 1
+        else:
+            self.step = 0
+
+    def play_sequence(self):
+
+        # Loop through active sequences and load wav files
+        for item in self.active_sequences:
+
+            # Load wav files to play
+            self.wav_files.append(open(item.fname, "rb"))
+            self.loaded_wavs.append(audiocore.WaveFile(self.wav_files[-1]))
+
+        # Main sequencer loop
+        # Calculate step duration
+        self.step_length = int(1000 // (self.bpm / 60))
+
+        self.play_music = True
+        audio.play(mixer)
+        while self.play_music == True:
+            self.play_step()
+            self.step_update()
+        audio.stop()
 
 # MIDI Functions
 def send_note_on(note, octv):
@@ -466,34 +546,79 @@ class SamplerState(State):
         State.exit(self, machine)
 
     def update(self, machine):
-        # Sampler code
+        ### Show menu text (Update with new menu)
         text = "Sampler"
         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
         display.show(text_area)
-        sequencer_play = True
 
-        # Pressing encoder will start looping the sequencer
-        while sequencer_play is True:
+        # Start sequencer
+        ### Need to figure out a sensible place to move this to resolve scope issues
+        sequencer = run_sequencer()
+
+        ### Add menu and programming portions here
+        ### Start menu emulating code
+        selection = True
+        while selection == True:
+            text = "Add Dummy Sequences?\n Key1: yes, Key2: no"
+            text_area = label.Label(
+                terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
+            )
+            display.show(text_area)
             key_event = keys.events.get()
             if key_event and key_event.pressed:
                 key = key_event.key_number
                 if key == 0:
-                    audio.play(mixer)
-                    # tracks = []
-                    test = fileSequencer
-                    test().set_sequence()
-                    test().play_sequence()
+                    sequencer.add_sequence(file_sequence())
+                    sequencer.active_sequences[0].fname = "Snare.wav"
+
+                    sequencer.add_sequence(file_sequence())
+                    sequencer.active_sequences[1].fname = 'Tom.wav'
+                    sequencer.active_sequences[1].set_sequence()
+
+                    sequencer.add_sequence(file_sequence())
+                    sequencer.active_sequences[2].fname = 'Kick.wav'
+                    sequencer.active_sequences[2].sequence = [[True, .5],[False, .5],[True, .5],[False, .5],[True, .5],[False, .5],[True, .5],[False, .5]]
+                    selection = False
+                if key == 1:
+                    selection = False
+
+        ### End menu emulating code
+
+        text = "Sampler"
+        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+        display.show(text_area)
+
+        ### Need to modify to move with menu selection:
+        dummy_menu_state = 0
+        sequencer.active_sequences[dummy_menu_state].show_sequence()
+
+        # Menu mode
+        while sequencer.play_music == False:
+
+            # Menu structure
+            # Add sequence -> select file -> sequencer.add_sequence(file_sequence())
+            # Edit sequence -> select existing sequence -> sequence selector
+            key_event = keys.events.get()
+            if key_event and key_event.pressed:
+                key = key_event.key_number
+                machine.last_enc1_pos = sequence_selector(
+                    sequencer.active_sequences[dummy_menu_state].sequence,
+                    0,
+                    1,
+                    0.05,
+                    key,
+                    machine.last_enc1_pos,
+                )
+                sequencer.active_sequences[dummy_menu_state].show_sequence()
+
+            ### Update to play/pause button for final hardware
             enc_buttons_event = enc_buttons.events.get()
             if enc_buttons_event and enc_buttons_event.pressed:
-                machine.go_to_state("menu")
-                sequencer_play = False
+                sequencer.play_music = True
 
-    """
-                else:
-                    print('exit')
-                    machine.go_to_state('menu')
-                    sequencer_play = False
-    """
+        # Play mode
+        while sequencer.play_music == True:
+            sequencer.play_sequence()
 
 
 class MIDIState(State):
