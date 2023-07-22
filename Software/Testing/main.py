@@ -171,26 +171,15 @@ def show_menu(menu):
             display_group.append(text_arrow)
             text_item = label.Label(terminalio.FONT, text=item, color=0x000000, x=10, y=((line-1)*line_height)+offset)
             display_group.append(text_item)
-            #display.fill_rect(0,(line-1)*line_height, width,line_height,1)
-            #display.text(">",0, (line-1)*line_height,0)
-            #display.text(item, 10, (line-1)*line_height,0)
-            #display.show()
         else:
             text_item = label.Label(terminalio.FONT, text=item, color = 0xFFFFFF, x=10, y=((line-1)*line_height)+offset)
             display_group.append(text_item)
-            #display.text(item, 10, (line-1)*line_height,1)
-            #display.show()
         line += 1
     display.show(display_group)
 
 def launch(filename):
     """ Launch the Python script <filename> """
     global file_list
-    # clear the screen
-    #display.fill_rect(0,0,width,height,0)
-    #display.text("Launching", 1, 10)
-    #display.text(filename,1, 20)
-    #display.show()
     time.sleep(3)
     exec(open(filename).read())
     show_menu(file_list)
