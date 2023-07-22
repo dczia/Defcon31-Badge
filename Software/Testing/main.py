@@ -1,4 +1,4 @@
-from setup import neopixels, keys, led, display, encoder_1, enc_buttons, midi_serial, width, height, total_lines, shift, highlight, line, list_length
+from setup import *
 from os import listdir
 import os
 import displayio
@@ -151,8 +151,6 @@ def show_menu(menu):
     # menu variables
     item = 1
     line = 1
-    line_height = 10
-    offset = 5
 
     color_bitmap = displayio.Bitmap(width, line_height, 1)
     color_palette = displayio.Palette(1)
@@ -336,14 +334,13 @@ class MenuState(State):
         while True:
             rainbow.animate()
             if self.last_position is not encoder_1.position:
-                print(str(self.last_position) + " " + str(encoder_1.position))
                 if encoder_1.position < self.last_position:
                     if highlight > 1:
                         highlight -= 1
                     else:
                         if shift > 0:
                             shift -= 1
-                    print(file_list)
+                    print('> ' + file_list[highlight-1+shift])
                     #show_menu(file_list)
                 else:
                     if highlight < total_lines:
@@ -351,7 +348,7 @@ class MenuState(State):
                     else:
                         if shift+total_lines < list_length:
                             shift += 1
-                    print(file_list)
+                    print('> ' + file_list[highlight-1+shift])
                 show_menu(file_list)
             self.last_position = encoder_1.position
 
