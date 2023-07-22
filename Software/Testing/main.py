@@ -1,4 +1,5 @@
-from setup import neopixels, keys, led, display, encoder_1, enc_buttons, midi_serial
+from setup import neopixels, keys, led, display, encoder_1, enc_buttons, midi_serial, width, height, total_lines, shift, highlight, line, list_length
+from os import listdir
 import os
 import displayio
 import terminalio
@@ -128,6 +129,72 @@ def send_note_off(note, octv):
 def send_cc(number, val):
     midi_serial.send(ControlChange(number, val))
 
+# Menu Functions
+def get_files():
+    """ Get a list of Python files in the root folder of the Pico """
+    
+    files = listdir()
+    menu = []
+    for file in files:
+        if file.endswith(".py"):
+            menu.append(file)
+
+    return(menu)
+
+def show_menu(menu):
+    """ Shows the menu on the screen"""
+    
+    display_group = displayio.Group()
+    # bring in the global variables
+    global line, highlight, shift, list_length
+
+    # menu variables
+    item = 1
+    line = 1
+    line_height = 10
+    offset = 5
+
+    # clear the display
+    #display.fill_rect(0,0,width,height,0)
+
+    # Shift the list of files so that it shows on the display
+    list_length = len(menu)
+    short_list = menu[shift:shift+total_lines]
+
+    for item in short_list:
+        if highlight == line:
+            text_arrow = '>'
+            text_arrow = label.Label(terminalio.FONT, text=text_arrow, color=0xFFFFFF, x=0, y=((line-1)*line_height)+offset)
+            display_group.append(text_arrow)
+            text_item = label.Label(terminalio.FONT, text=item, color=0xFFFFFF, x=10, y=((line-1)*line_height)+offset)
+            display_group.append(text_item)
+            #display.fill_rect(0,(line-1)*line_height, width,line_height,1)
+            #display.text(">",0, (line-1)*line_height,0)
+            #display.text(item, 10, (line-1)*line_height,0)
+            #display.show()
+        else:
+            text_item = label.Label(terminalio.FONT, text=item, color=0xFFFFFF, x=10, y=((line-1)*line_height)+offset)
+            display_group.append(text_item)
+            #display.text(item, 10, (line-1)*line_height,1)
+            #display.show()
+        line += 1
+    display.show(display_group)
+
+def launch(filename):
+    """ Launch the Python script <filename> """
+    global file_list
+    # clear the screen
+    #display.fill_rect(0,0,width,height,0)
+    #display.text("Launching", 1, 10)
+    #display.text(filename,1, 20)
+    #display.show()
+    time.sleep(3)
+    exec(open(filename).read())
+    show_menu(file_list)
+
+# Get the list of Python files and display the menu
+file_list = get_files()
+show_menu(file_list)
 
 class State(object):
     def __init__(self):
@@ -255,11 +322,46 @@ class MenuState(State):
         # Code for moving through menu and selecting mode
         mode_select = False
         mode = 'flashy'
-        text = '1. Flashy Mode'
-        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-        display.show(text_area)
+        #text = '1. Flashy Mode'
+        #text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+        #display.show(text_area)
+        rainbow = Rainbow(neopixels, speed = 0.1)
+        global highlight, shift
+        show_menu(file_list)
+        while True:
+            rainbow.animate()
+            if self.last_position is not encoder_1.position:
+                print(str(self.last_position) + " " + str(encoder_1.position))
+                if encoder_1.position < self.last_position:
+                    if highlight > 1:
+                        highlight -= 1
+                    else:
+                        if shift > 0:
+                            shift -= 1
+                    print(file_list)
+                    #show_menu(file_list)
+                else:
+                    if highlight < total_lines:
+                        highlight += 1
+                    else:
+                        if shift+total_lines < list_length:
+                            shift += 1
+                    print(file_list)
+                show_menu(file_list)
+            self.last_position = encoder_1.position
 
+            # Check for button pressed
+            enc_buttons_event = enc_buttons.events.get()
+            if enc_buttons_event and enc_buttons_event.pressed:
+                print("Button Pressed)")
+                print("Launching", file_list[highlight-1+shift])
+
+                # execute script
+                launch(file_list[(highlight-1) + shift])
+                print("Returned from launch")
+        '''
         while mode_select is False:
+            rainbow.animate()
             # Some code here to use an encoder to scroll through menu options, press to select one
             position = encoder_1.position
 
@@ -321,7 +423,7 @@ class MenuState(State):
                 if mode == 'flashy':
                     machine.go_to_state('flashy')
                     mode_select = True
-
+        '''
 class SequencerState(State):
   
     @property
@@ -438,7 +540,9 @@ class MIDIState(State):
 
 
 class FlashyState(State):
-  
+
+    last_position = encoder_1.position
+
     @property
     def name(self):
         return 'flashy'
@@ -451,12 +555,34 @@ class FlashyState(State):
 
     def update(self, machine):
         party = True
-        text = 'Flashy Mode'
+        choices = ["rainbow", "rainbow_chase"]
+        i = 0
+        selection = choices[i]
+        text = 'Rainbow'
         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
         display.show(text_area)
         rainbow = Rainbow(neopixels, speed = 0.1)
+        rainbow_chase = RainbowChase(neopixels, speed=0.1, size=5, spacing=3)
         while party is True:
-            rainbow.animate()
+            position = encoder_1.position
+            if position > self.last_position:
+                if i == len(choices):
+                    i = 0
+                selection = choices[i]
+                i += 1
+                if selection == 'rainbow':
+                    text = 'Rainbow'
+                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+                    display.show(text_area)
+                    rainbow_chase.freeze()
+                    rainbow.animate()
+                if selection == 'rainbow_chase':
+                    text = 'Rainbow Chase'
+                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+                    display.show(text_area)
+                    rainbow.freeze()
+                    rainbow_chase.animate()
+
             enc_buttons_event = enc_buttons.events.get()
             if enc_buttons_event and enc_buttons_event.pressed:
                 neopixels.fill((255,0,0))
