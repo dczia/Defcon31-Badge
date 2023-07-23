@@ -1,7 +1,17 @@
-from setup import *
-from os import listdir
-import os
-from setup import *
+from setup import (
+    neopixels,
+    enc_buttons,
+    display,
+    encoder_1,
+    midi_serial,
+    ControlChange,
+    clk_src,
+    total_lines,
+    line_height,
+    width,
+    offset,
+    keys,
+)
 from os import listdir
 import os
 import displayio
@@ -10,7 +20,6 @@ from adafruit_display_text import label
 import time
 from supervisor import ticks_ms
 import board
-import busio as io
 import audiobusio
 import audiocore
 import audiomixer
@@ -88,7 +97,7 @@ class fileSequencer:
         pass
 
     def set_clk_src(self):
-        clk_options = ["ext, midi, int"]
+        # clk_options = ["ext, midi, int"]
         # Display clk_options on screen, scroll/select
         # Ext takes signal from sync in, midi syncs to midi input, int is
         # internally clocked
@@ -110,12 +119,12 @@ class fileSequencer:
         # wav = audiocore.WaveFile(wave_file)
 
         seq_loop = True
-        while seq_loop == True:
+        while seq_loop is True:
             # Helpful output for troubleshooting
             # print('Step ' + str(step) + ': ' + str(self.sequence[step][0]) + ', ' + str(self.sequence[step][1]))
 
             # Play notes that are set to true in seq array
-            if self.sequence[step][0] == True:
+            if self.sequence[step][0] is True:
                 wav = audiocore.WaveFile(wave_file)
 
                 # Set volume based on 'velocity' parameter
@@ -126,7 +135,7 @@ class fileSequencer:
             while ticks_ms() < step_end:
                 key_event = keys.events.get()
                 if key_event and key_event.pressed:
-                    if audio.playing == True:
+                    if audio.playing is True:
                         audio.stop()
                         seq_loop = False
 
@@ -256,10 +265,10 @@ class State(object):
         pass
 
     def update(self, machine):
-        if switch.fell:
-            machine.paused_state = machine.state.name
-            machine.pause()
-            return False
+        # if switch.fell:
+        #    machine.paused_state = machine.state.name
+        #    machine.pause()
+        #    return False
         return True
 
 
@@ -356,7 +365,26 @@ class StartupState(State):
 
 
 class MenuState(State):
-    last_position = 0
+    last_position = -100
+
+    menu_items = [
+        {
+            "name": "flashy",
+            "pretty": "Flashy",
+        },
+        {
+            "name": "sequencer",
+            "pretty": "Sequencer",
+        },
+        {
+            "name": "sampler",
+            "pretty": "Sampler",
+        },
+        {
+            "name": "midi_controller",
+            "pretty": "MIDI Controller",
+        },
+    ]
 
     @property
     def name(self):
@@ -370,109 +398,28 @@ class MenuState(State):
 
     def update(self, machine):
         # Code for moving through menu and selecting mode
-        mode_select = False
-        mode = "flashy"
-        text = '1. Flashy Mode'
-        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-        display.show(text_area)
         rainbow = Rainbow(neopixels, speed=0.1)
-        global highlight, shift
-        show_menu(file_list)
-        """
-        while True:
-            rainbow.animate()
-            if self.last_position is not encoder_1.position:
-                if encoder_1.position < self.last_position:
-                    if highlight > 1:
-                        highlight -= 1
-                    else:
-                        if shift > 0:
-                            shift -= 1
-                    print("> " + file_list[highlight - 1 + shift])
-                    # show_menu(file_list)
-                else:
-                    if highlight < total_lines:
-                        highlight += 1
-                    else:
-                        if shift + total_lines < list_length:
-                            shift += 1
-                    print("> " + file_list[highlight - 1 + shift])
-                show_menu(file_list)
-            self.last_position = encoder_1.position
+        rainbow.animate()
+        # Some code here to use an encoder to scroll through menu options, press to select one
+        position = encoder_1.position
 
-            # Check for button pressed
-            enc_buttons_event = enc_buttons.events.get()
-            if enc_buttons_event and enc_buttons_event.pressed:
-                print("Button Pressed")
-                print("Launching", file_list[highlight - 1 + shift])
-
-                # execute script
-                launch(file_list[(highlight - 1) + shift])
-                print("Returned from launch")
-        """
-        while mode_select is False:
-            rainbow.animate()
-            # Some code here to use an encoder to scroll through menu options, press to select one
-            position = encoder_1.position
-
-            if position > self.last_position:
-                if mode == 'flashy':
-                    mode = 'sequencer'
-                    text = '2. Sequencer'
-                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-                    display.show(text_area)
-                elif mode == 'sequencer':
-                    mode = 'sampler'
-                    text = '3. Sampler'
-                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-                    display.show(text_area)
-                elif mode == 'sampler':
-                    mode = 'midi_controller'
-                    text = '4. MIDI Controller'
-                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-                    display.show(text_area)
-                elif mode == 'midi_controller':
-                    mode = 'flashy'
-                    text = '1. Flashy Mode'
-                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-                    display.show(text_area)
-            if self.last_position > position:
-                if mode == 'flashy':
-                    mode = 'midi_controller'
-                    text = '4. MIDI Controller'
-                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-                    display.show(text_area)
-                elif mode == 'sequencer':
-                    mode = 'flashy'
-                    text = '1. Flashy Mode'
-                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-                    display.show(text_area)
-                elif mode == 'sampler':
-                    mode = 'sequencer'
-                    text = '2. Sequencer'
-                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-                    display.show(text_area)
-                elif mode == 'midi_controller':
-                    mode = 'sampler'
-                    text = '3. Sampler'
-                    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-                    display.show(text_area)
+        if position != self.last_position:
+            index = position % len(
+                self.menu_items
+            )  # Generate a valid index from the position
+            # mode = self.menu_items[index]["name"]
+            pretty_name = self.menu_items[index]["pretty"]
+            text = str.format("{}: {}", index, pretty_name)
+            text_area = label.Label(
+                terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
+            )
+            display.show(text_area)
             self.last_position = position
 
         enc_buttons_event = enc_buttons.events.get()
         if enc_buttons_event and enc_buttons_event.pressed:
-            if mode == "sequencer":
-                machine.go_to_state("sequencer")
-                mode_select = True
-            if mode == "sampler":
-                machine.go_to_state("sampler")
-                mode_select = True
-            if mode == "midi_controller":
-                machine.go_to_state("midi_controller")
-                mode_select = True
-            if mode == "flashy":
-                machine.go_to_state("flashy")
-                mode_select = True
+            index = position % len(self.menu_items)
+            machine.go_to_state(self.menu_items[index]["name"])
 
 
 class SequencerState(State):
@@ -526,13 +473,13 @@ class SamplerState(State):
         sequencer_play = True
 
         # Pressing encoder will start looping the sequencer
-        while sequencer_play == True:
+        while sequencer_play is True:
             key_event = keys.events.get()
             if key_event and key_event.pressed:
                 key = key_event.key_number
                 if key == 0:
                     audio.play(mixer)
-                    tracks = []
+                    # tracks = []
                     test = fileSequencer
                     test().set_sequence()
                     test().play_sequence()
@@ -568,7 +515,7 @@ class MIDIState(State):
         neopixels.fill((255, 0, 0))
         neopixels.show()
         run_midi = True
-        while run_midi == True:
+        while run_midi is True:
             key_event = keys.events.get()
             if key_event:
                 if key_event.pressed:
@@ -652,7 +599,7 @@ machine.add_state(SamplerState())
 machine.add_state(MIDIState())
 machine.add_state(FlashyState())
 
-machine.go_to_state("startup")
+machine.go_to_state("menu")
 
 while True:
     machine.update()
