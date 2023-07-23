@@ -3,13 +3,15 @@ import busio as io
 import digitalio
 import storage
 import adafruit_sdcard
-#import microcontroller
+
+# import microcontroller
 import audiocore
 import audiobusio
 import rotaryio
 import keypad
 import neopixel
 import adafruit_midi
+
 # Display imports
 import displayio
 import adafruit_displayio_ssd1306
@@ -53,14 +55,14 @@ keyswitch_pins = (
     board.GP20,
     board.GP19,
     board.GP18,
-    board.GP17
+    board.GP17,
 )
 
-#ON_COLOR = (0, 0, 255)
-#OFF_COLOR = (255, 0, 0)
+# ON_COLOR = (0, 0, 255)
+# OFF_COLOR = (255, 0, 0)
 
 keys = keypad.Keys(keyswitch_pins, value_when_pressed=False, pull=True)
-#neopixels.fill(OFF_COLOR)
+# neopixels.fill(OFF_COLOR)
 
 # Setup rotary encoders
 encoder_1 = rotaryio.IncrementalEncoder(board.GP4, board.GP5)
@@ -68,7 +70,9 @@ encoder_1 = rotaryio.IncrementalEncoder(board.GP4, board.GP5)
 # MIDI setup
 midi_uart = io.UART(tx=board.GP8, baudrate=31250)
 midi_serial_channel = 2
-midi_serial = adafruit_midi.MIDI(midi_out=midi_uart, out_channel=midi_serial_channel-1)
+midi_serial = adafruit_midi.MIDI(
+    midi_out=midi_uart, out_channel=midi_serial_channel - 1
+)
 
 
 # Setup the SD card and mount it as /sd
@@ -80,5 +84,4 @@ storage.mount(vfs, "/sd")
 
 # Setup audio
 audio = audiobusio.I2SOut(board.GP0, board.GP1, board.GP2)
-  # volume
-
+# volume
