@@ -5,7 +5,7 @@ import storage
 import adafruit_sdcard
 
 # import microcontroller
-import audiocore
+# import audiocore
 import audiobusio
 import rotaryio
 import keypad

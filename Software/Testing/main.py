@@ -1,16 +1,20 @@
-from setup import neopixels, keys, led, display, encoder_1, enc_buttons, midi_serial
-import displayio
+from setup import neopixels, keys, display, encoder_1, enc_buttons, midi_serial
+
+# import displayio
 import terminalio
 from adafruit_display_text import label
 import time
 from supervisor import ticks_ms
 import board
-import busio as io
+
+# import busio as io
 import audiobusio
 import audiocore
 import audiomixer
+import os
 from adafruit_midi.note_on import NoteOn
 from adafruit_midi.note_off import NoteOff
+from adafruit_midi.control_change import ControlChange
 
 
 # Setup audio
@@ -85,11 +89,11 @@ class fileSequencer:
         # Display clk_options on screen, scroll/select
         # Ext takes signal from sync in, midi syncs to midi input, int is
         # internally clocked
-        if clk_src == "ext":
+        if self.clk_src == clk_options[0]:  # ext
             print("need to implement")
-        elif clk_src == "midi":
+        elif self.clk_src == clk_options[1]:  # midi
             print("need to implement")
-        elif clk_src == "int":
+        elif self.clk_src == clk_options[2]:  # int
             pass
 
     def play_sequence(self):
@@ -103,12 +107,12 @@ class fileSequencer:
         # wav = audiocore.WaveFile(wave_file)
 
         seq_loop = True
-        while seq_loop == True:
+        while seq_loop is True:
             # Helpful output for troubleshooting
             # print('Step ' + str(step) + ': ' + str(self.sequence[step][0]) + ', ' + str(self.sequence[step][1]))
 
             # Play notes that are set to true in seq array
-            if self.sequence[step][0] == True:
+            if self.sequence[step][0] is True:
                 wav = audiocore.WaveFile(wave_file)
 
                 # Set volume based on 'velocity' parameter
@@ -119,7 +123,7 @@ class fileSequencer:
             while ticks_ms() < step_end:
                 key_event = keys.events.get()
                 if key_event and key_event.pressed:
-                    if audio.playing == True:
+                    if audio.playing is True:
                         audio.stop()
                         seq_loop = False
 
@@ -165,10 +169,10 @@ class State(object):
         pass
 
     def update(self, machine):
-        if switch.fell:
-            machine.paused_state = machine.state.name
-            machine.pause()
-            return False
+        # if switch.fell:
+        #     machine.paused_state = machine.state.name
+        #     machine.pause()
+        #     return False
         return True
 
 
@@ -272,7 +276,7 @@ class MenuState(State):
         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
         display.show(text_area)
         mode_select = False
-        while mode_select == False:
+        while mode_select is False:
             # Some code here to use an encoder to scroll through menu options, press to select one
             mode = "flashy"
             enc_buttons_event = enc_buttons.events.get()
@@ -305,7 +309,7 @@ class SequencerState(State):
     def update(self, machine):
         # Sequencer code
         run_sequencer = True
-        while run_midi == True:
+        while run_sequencer is True:
             # send_note_on(1,4)
             # time.sleep(1.5)
             # send_note_off(1,4)
@@ -317,10 +321,12 @@ class SequencerState(State):
             enc_buttons_event = enc_buttons.events.get()
             if enc_buttons_event and enc_buttons_event.pressed:
                 machine.go_to_state("flashy")
-                run_midi = False
+                run_sequencer = False
 
 
 class SamplerState(State):
+    track = []
+
     @property
     def name(self):
         return "sampler"
@@ -339,13 +345,13 @@ class SamplerState(State):
         sequencer_play = True
 
         # Pressing encoder will start looping the sequencer
-        while sequencer_play == True:
+        while sequencer_play is True:
             key_event = keys.events.get()
             if key_event and key_event.pressed:
                 key = key_event.key_number
                 if key == 0:
                     audio.play(mixer)
-                    tracks = []
+                    self.tracks = []
                     test = fileSequencer
                     test().set_sequence()
                     test().play_sequence()
@@ -379,7 +385,7 @@ class MIDIState(State):
         display.show(text_area)
 
         run_midi = True
-        while run_midi == True:
+        while run_midi is True:
             key_event = keys.events.get()
             if key_event:
                 if key_event.pressed:
@@ -415,7 +421,7 @@ class FlashyState(State):
         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
         display.show(text_area)
         party = True
-        while party == True:
+        while party is True:
             for i in range(0, 8):
                 neopixels[i] = (0, 0, 255)
                 time.sleep(0.2)
