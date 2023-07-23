@@ -344,7 +344,7 @@ class MenuState(State):
             # Check for button pressed
             enc_buttons_event = enc_buttons.events.get()
             if enc_buttons_event and enc_buttons_event.pressed:
-                print("Button Pressed)")
+                print("Button Pressed")
                 print("Launching", file_list[highlight-1+shift])
 
                 # execute script
