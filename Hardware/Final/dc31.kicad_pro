@@ -34,9 +34,9 @@
         "other_text_thickness": 0.15,
         "other_text_upright": false,
         "pads": {
-          "drill": 0.762,
-          "height": 1.524,
-          "width": 1.524
+          "drill": 0.3,
+          "height": 0.5,
+          "width": 0.5
         },
         "silk_line_width": 0.15,
         "silk_text_italic": false,
@@ -55,7 +55,17 @@
           "width": 0.0
         }
       ],
-      "drc_exclusions": [],
+      "drc_exclusions": [
+        "hole_clearance|164975895|53330000|bf51849f-d2b9-49d4-836c-27582e893502|8a79b0a9-c2f9-4575-9d79-e931131080d1",
+        "hole_clearance|181720000|53330000|2ef74d19-e6c6-4bf7-bce2-b76ab57c1a7c|762daf16-939e-495f-beaf-6ea167129eee",
+        "hole_clearance|181730000|64340000|870e2813-ed2f-4ba7-8445-53d08518782e|ef8b4485-41e2-4445-a35c-3fd1284a08a5",
+        "hole_clearance|198464105|53330000|22e99b4a-3401-4043-a852-e5f8b32d9e55|06fb9026-7f26-4c59-8149-16742f57b744",
+        "hole_clearance|198464105|64350000|cbfc96e5-b007-44b5-9e56-07ea8105d52c|6eabec09-7e45-4cc9-ae2e-98bfd5fd46e3",
+        "lib_footprint_mismatch|103810000|93632500|7530f1d6-3879-4d8c-990c-614234c661b1|00000000-0000-0000-0000-000000000000",
+        "lib_footprint_mismatch|103810000|94437500|7530f1d6-3879-4d8c-990c-614234c661b1|00000000-0000-0000-0000-000000000000",
+        "lib_footprint_mismatch|132970000|48108750|d121e3c0-609c-438d-8241-44cf8c05cca1|00000000-0000-0000-0000-000000000000",
+        "net_conflict|164720000|44320000|3ada59b0-42b1-487e-9570-55cd89f28cbe|00000000-0000-0000-0000-000000000000"
+      ],
       "meta": {
         "version": 2
       },
@@ -111,7 +121,7 @@
       },
       "rules": {
         "max_error": 0.005,
-        "min_clearance": 0.0,
+        "min_clearance": 0.15239999999999998,
         "min_connection": 0.0,
         "min_copper_edge_clearance": 0.0,
         "min_hole_clearance": 0.25,
@@ -123,7 +133,7 @@
         "min_text_height": 0.7999999999999999,
         "min_text_thickness": 0.08,
         "min_through_hole_diameter": 0.3,
-        "min_track_width": 0.0,
+        "min_track_width": 0.15239999999999998,
         "min_via_annular_width": 0.09999999999999999,
         "min_via_diameter": 0.5,
         "solder_mask_clearance": 0.0,
@@ -447,7 +457,7 @@
       "idf": "",
       "netlist": "",
       "specctra_dsn": "",
-      "step": "",
+      "step": "dc31.step",
       "vrml": ""
     },
     "page_layout_descr_file": ""
