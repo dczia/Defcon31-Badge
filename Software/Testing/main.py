@@ -371,11 +371,11 @@ class MenuState(State):
     def update(self, machine):
         # Code for moving through menu and selecting mode
         mode_select = False
-        mode = 'flashy'
-        #text = '1. Flashy Mode'
-        #text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-        #display.show(text_area)
-        rainbow = Rainbow(neopixels, speed = 0.1)
+        mode = "flashy"
+        # text = '1. Flashy Mode'
+        # text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+        # display.show(text_area)
+        rainbow = Rainbow(neopixels, speed=0.1)
         global highlight, shift
         show_menu(file_list)
         while True:
@@ -387,15 +387,15 @@ class MenuState(State):
                     else:
                         if shift > 0:
                             shift -= 1
-                    print('> ' + file_list[highlight-1+shift])
-                    #show_menu(file_list)
+                    print("> " + file_list[highlight - 1 + shift])
+                    # show_menu(file_list)
                 else:
                     if highlight < total_lines:
                         highlight += 1
                     else:
-                        if shift+total_lines < list_length:
+                        if shift + total_lines < list_length:
                             shift += 1
-                    print('> ' + file_list[highlight-1+shift])
+                    print("> " + file_list[highlight - 1 + shift])
                 show_menu(file_list)
             self.last_position = encoder_1.position
 
@@ -403,12 +403,12 @@ class MenuState(State):
             enc_buttons_event = enc_buttons.events.get()
             if enc_buttons_event and enc_buttons_event.pressed:
                 print("Button Pressed")
-                print("Launching", file_list[highlight-1+shift])
+                print("Launching", file_list[highlight - 1 + shift])
 
                 # execute script
-                launch(file_list[(highlight-1) + shift])
+                launch(file_list[(highlight - 1) + shift])
                 print("Returned from launch")
-        '''
+        """
         while mode_select is False:
             rainbow.animate()
             # Some code here to use an encoder to scroll through menu options, press to select one
@@ -457,7 +457,7 @@ class MenuState(State):
                     text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
                     display.show(text_area)
             self.last_position = position
-        '''
+        """
         enc_buttons_event = enc_buttons.events.get()
         if enc_buttons_event and enc_buttons_event.pressed:
             if mode == "sequencer":
@@ -506,7 +506,6 @@ class SequencerState(State):
                 machine.go_to_state("menu")
 
 
-
 class SamplerState(State):
     @property
     def name(self):
@@ -520,7 +519,7 @@ class SamplerState(State):
 
     def update(self, machine):
         # Sampler code
-        text = 'Sampler'
+        text = "Sampler"
         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
         display.show(text_area)
         sequencer_play = True
@@ -540,6 +539,7 @@ class SamplerState(State):
             if enc_buttons_event and enc_buttons_event.pressed:
                 machine.go_to_state("menu")
                 sequencer_play = False
+
     """
                 else:
                     print('exit')
@@ -560,7 +560,7 @@ class MIDIState(State):
         State.exit(self, machine)
 
     def update(self, machine):
-        text = 'MIDI Controller'
+        text = "MIDI Controller"
         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
         display.show(text_area)
 
