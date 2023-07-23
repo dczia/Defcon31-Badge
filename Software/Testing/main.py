@@ -372,12 +372,13 @@ class MenuState(State):
         # Code for moving through menu and selecting mode
         mode_select = False
         mode = "flashy"
-        # text = '1. Flashy Mode'
-        # text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-        # display.show(text_area)
+        text = '1. Flashy Mode'
+        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+        display.show(text_area)
         rainbow = Rainbow(neopixels, speed=0.1)
         global highlight, shift
         show_menu(file_list)
+        """
         while True:
             rainbow.animate()
             if self.last_position is not encoder_1.position:
@@ -457,7 +458,7 @@ class MenuState(State):
                     text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
                     display.show(text_area)
             self.last_position = position
-        """
+
         enc_buttons_event = enc_buttons.events.get()
         if enc_buttons_event and enc_buttons_event.pressed:
             if mode == "sequencer":
