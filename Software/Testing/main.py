@@ -2,13 +2,6 @@ from setup import (
     display,
     enc_buttons,
     encoder_1,
-    midi_serial,
-    total_lines,
-    shift,
-    highlight,
-    line_height,
-    width,
-    offset,
     keys,
     midi_serial,
     neopixels,
@@ -45,7 +38,6 @@ mixer = audiomixer.Mixer(
 
 
 def sequence_selector(value, min_val, max_val, increment, key_val, encoder_pos):
-
     selection = True
     vel_change = False
     # Display current value
@@ -73,7 +65,6 @@ def sequence_selector(value, min_val, max_val, increment, key_val, encoder_pos):
 
         # Exit selection menu if key released
         if key_event and key_event.released:
-
             if key_event.key_number == key_val:
                 if vel_change == False:
                     value[key_val][0] = not value[key_val][0]
@@ -84,7 +75,7 @@ def sequence_selector(value, min_val, max_val, increment, key_val, encoder_pos):
 # File sequencer class
 # Sets up a sequence track to play a .wav file sample at regular intervals
 # 8 step sequence tells whether to play
-class fileSequencer:
+class file_sequence:
     clk_src = ""
 
     def __init__(self):
@@ -173,7 +164,6 @@ class run_sequencer:
             pass
 
     def play_step(self):
-
         # Calculate step duration
         self.step_start = ticks_ms()
         self.step_end = self.step_start + self.step_length
@@ -192,7 +182,6 @@ class run_sequencer:
 
         # Wait for beat duration and watch for stop
         while ticks_ms() < self.step_end:
-
             ### Update to play/pause button for final hardware
             enc_buttons_event = enc_buttons.events.get()
             if enc_buttons_event and enc_buttons_event.pressed:
@@ -214,10 +203,8 @@ class run_sequencer:
             self.step = 0
 
     def play_sequence(self):
-
         # Loop through active sequences and load wav files
         for item in self.active_sequences:
-
             # Load wav files to play
             self.wav_files.append(open(item.fname, "rb"))
             self.loaded_wavs.append(audiocore.WaveFile(self.wav_files[-1]))
@@ -232,6 +219,7 @@ class run_sequencer:
             self.play_step()
             self.step_update()
         audio.stop()
+
 
 # MIDI Functions
 def send_note_on(note, octv):
@@ -371,6 +359,9 @@ class MenuState(State):
         State.enter(self, machine)
 
     def exit(self, machine):
+        neopixels.fill((255, 0, 0))
+        neopixels.show()
+        encoder_1.position = 0
         State.exit(self, machine)
 
     def update(self, machine):
@@ -396,6 +387,7 @@ class MenuState(State):
         enc_buttons_event = enc_buttons.events.get()
         if enc_buttons_event and enc_buttons_event.pressed:
             index = position % len(self.menu_items)
+            encoder_1.position = 0
             machine.go_to_state(self.menu_items[index]["name"])
 
 
@@ -469,12 +461,21 @@ class SamplerState(State):
                     sequencer.active_sequences[0].fname = "Snare.wav"
 
                     sequencer.add_sequence(file_sequence())
-                    sequencer.active_sequences[1].fname = 'Tom.wav'
+                    sequencer.active_sequences[1].fname = "Tom.wav"
                     sequencer.active_sequences[1].set_sequence()
 
                     sequencer.add_sequence(file_sequence())
-                    sequencer.active_sequences[2].fname = 'Kick.wav'
-                    sequencer.active_sequences[2].sequence = [[True, .5],[False, .5],[True, .5],[False, .5],[True, .5],[False, .5],[True, .5],[False, .5]]
+                    sequencer.active_sequences[2].fname = "Kick.wav"
+                    sequencer.active_sequences[2].sequence = [
+                        [True, 0.5],
+                        [False, 0.5],
+                        [True, 0.5],
+                        [False, 0.5],
+                        [True, 0.5],
+                        [False, 0.5],
+                        [True, 0.5],
+                        [False, 0.5],
+                    ]
                     selection = False
                 if key == 1:
                     selection = False
@@ -491,7 +492,6 @@ class SamplerState(State):
 
         # Menu mode
         while sequencer.play_music == False:
-
             # Menu structure
             # Add sequence -> select file -> sequencer.add_sequence(file_sequence())
             # Edit sequence -> select existing sequence -> sequence selector
@@ -559,7 +559,19 @@ class MIDIState(State):
 
 
 class FlashyState(State):
-    last_position = encoder_1.position
+    last_position = -100
+    rainbow = {}
+
+    menu_items = [
+        {
+            "function": "rainbow_chase",
+            "pretty": "Rainbow Chase",
+        },
+        {
+            "function": "rainbow",
+            "pretty": "Rainbow",
+        },
+    ]
 
     @property
     def name(self):
@@ -569,48 +581,35 @@ class FlashyState(State):
         State.enter(self, machine)
 
     def exit(self, machine):
+        neopixels.fill((255, 0, 0))
+        neopixels.show()
+        encoder_1.position = 0
         State.exit(self, machine)
 
     def update(self, machine):
-        party = True
-        choices = ["rainbow", "rainbow_chase"]
-        i = 0
-        selection = choices[i]
-        text = "Rainbow"
-        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-        display.show(text_area)
-        rainbow = Rainbow(neopixels, speed=0.1)
-        rainbow_chase = RainbowChase(neopixels, speed=0.1, size=5, spacing=3)
-        while party is True:
-            position = encoder_1.position
-            if position > self.last_position:
-                if i == len(choices):
-                    i = 0
-                selection = choices[i]
-                i += 1
-                if selection == "rainbow":
-                    text = "Rainbow"
-                    text_area = label.Label(
-                        terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
-                    )
-                    display.show(text_area)
-                    rainbow_chase.freeze()
-                    rainbow.animate()
-                if selection == "rainbow_chase":
-                    text = "Rainbow Chase"
-                    text_area = label.Label(
-                        terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
-                    )
-                    display.show(text_area)
-                    rainbow.freeze()
-                    rainbow_chase.animate()
+        position = encoder_1.position
+        if position != self.last_position:
+            index = position % len(
+                self.menu_items
+            )  # Generate a valid index from the position
+            pretty_name = self.menu_items[index]["pretty"]
+            text = str.format("{}: {}", index, pretty_name)
+            text_area = label.Label(
+                terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
+            )
+            display.show(text_area)
+            self.last_position = position
+            if self.menu_items[index]["function"] == "rainbow":
+                self.rainbow = Rainbow(neopixels, speed=0.1)
+            elif self.menu_items[index]["function"] == "rainbow_chase":
+                self.rainbow = RainbowChase(neopixels, speed=0.1)
+        else:
+            # All animations need to impliment animate() as their step function
+            self.rainbow.animate()
 
-            enc_buttons_event = enc_buttons.events.get()
-            if enc_buttons_event and enc_buttons_event.pressed:
-                neopixels.fill((255, 0, 0))
-                neopixels.show()
-                machine.go_to_state("menu")
-                party = False
+        enc_buttons_event = enc_buttons.events.get()
+        if enc_buttons_event and enc_buttons_event.pressed:
+            machine.go_to_state("menu")
 
 
 machine = StateMachine()
