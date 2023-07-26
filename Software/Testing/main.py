@@ -715,7 +715,6 @@ class FlashyState(State):
             machine.go_to_state("menu")
 
 class HIDState(State):
-    last_position = 0
     kbd = Keyboard(usb_hid.devices)
     consumer_control = ConsumerControl(usb_hid.devices)
 
@@ -739,7 +738,10 @@ class HIDState(State):
         text = "HID Controller"
         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
         display.show(text_area)
-        cur_position = encoder_1.position
+        neopixels.fill((100, 100, 100))
+        neopixels.show()
+        encoder_1.position = 0
+        self.last_position = 0
         State.enter(self, machine)
 
     def exit(self, machine):
@@ -768,7 +770,8 @@ class HIDState(State):
             if key_event.released:
                 print("Key released:", key_event.key_number)
                 self.kbd.release(self.keymap[key_event.key_number])
-                neopixels[key_event.key_number] = (255, 255, 255)
+                neopixels[key_event.key_number] = (100, 100, 100)
+            neopixels.show()
 
         enc_buttons_event = enc_buttons.events.get()
         if enc_buttons_event and enc_buttons_event.pressed:
