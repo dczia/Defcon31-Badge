@@ -1,7 +1,6 @@
 from setup import (
-    neopixels,
-    enc_buttons,
     display,
+    enc_buttons,
     encoder_1,
     midi_serial,
     total_lines,
@@ -11,10 +10,11 @@ from setup import (
     width,
     offset,
     keys,
+    midi_serial,
+    neopixels,
 )
 from os import listdir
 import os
-import displayio
 import terminalio
 from adafruit_display_text import label
 import time
@@ -84,7 +84,9 @@ def sequence_selector(value, min_val, max_val, increment, key_val, encoder_pos):
 # File sequencer class
 # Sets up a sequence track to play a .wav file sample at regular intervals
 # 8 step sequence tells whether to play
-class file_sequence:
+class fileSequencer:
+    clk_src = ""
+
     def __init__(self):
         self.fname = ""
         self.sequence = [
@@ -163,11 +165,11 @@ class run_sequencer:
         # Display clk_options on screen, scroll/select
         # Ext takes signal from sync in, midi syncs to midi input, int is
         # internally clocked
-        if clk_src == "ext":
+        if self.clk_src == "ext":
             print("need to implement")
-        elif clk_src == "midi":
+        elif self.clk_src == "midi":
             print("need to implement")
-        elif clk_src == "int":
+        elif self.clk_src == "int":
             pass
 
     def play_step(self):
@@ -247,7 +249,7 @@ def send_cc(number, val):
 
 
 # Menu Functions
-def get_files():
+def get_files(directory="."):
     """Get a list of Python files in the root folder of the Pico"""
 
     files = listdir()
@@ -257,77 +259,6 @@ def get_files():
             menu.append(file)
 
     return menu
-
-
-def show_menu(menu):
-    """Shows the menu on the screen"""
-
-    display_group = displayio.Group()
-    # bring in the global variables
-    global line, highlight, shift, list_length
-
-    # menu variables
-    item = 1
-    line = 1
-
-    color_bitmap = displayio.Bitmap(width, line_height, 1)
-    color_palette = displayio.Palette(1)
-    color_palette[0] = 0xFFFFFF  # White
-
-    # Shift the list of files so that it shows on the display
-    list_length = len(menu)
-    short_list = menu[shift : shift + total_lines]
-
-    for item in short_list:
-        if highlight == line:
-            white_rectangle = displayio.TileGrid(
-                color_bitmap,
-                pixel_shader=color_palette,
-                x=0,
-                y=((line - 1) * line_height),
-            )
-            display_group.append(white_rectangle)
-            text_arrow = ">"
-            text_arrow = label.Label(
-                terminalio.FONT,
-                text=text_arrow,
-                color=0x000000,
-                x=0,
-                y=((line - 1) * line_height) + offset,
-            )
-            display_group.append(text_arrow)
-            text_item = label.Label(
-                terminalio.FONT,
-                text=item,
-                color=0x000000,
-                x=10,
-                y=((line - 1) * line_height) + offset,
-            )
-            display_group.append(text_item)
-        else:
-            text_item = label.Label(
-                terminalio.FONT,
-                text=item,
-                color=0xFFFFFF,
-                x=10,
-                y=((line - 1) * line_height) + offset,
-            )
-            display_group.append(text_item)
-        line += 1
-    display.show(display_group)
-
-
-def launch(filename):
-    """Launch the Python script <filename>"""
-    global file_list
-    time.sleep(3)
-    exec(open(filename).read())
-    show_menu(file_list)
-
-
-# Get the list of Python files and display the menu
-file_list = get_files()
-show_menu(file_list)
 
 
 class State(object):
@@ -345,11 +276,7 @@ class State(object):
         pass
 
     def update(self, machine):
-        # if switch.fell:
-        #    machine.paused_state = machine.state.name
-        #    machine.pause()
-        #    return False
-        return True
+        pass
 
 
 class StateMachine(object):
@@ -382,36 +309,6 @@ class StateMachine(object):
         if self.state:
             self.state.exit(self)
         self.state = self.states[state_name]
-
-
-"""
-class PausedState(State):
-
-    def __init__(self):
-        self.switch_pressed_at = 0
-
-    @property
-    def name(self):
-        return 'paused'
-
-    def enter(self, machine):
-        State.enter(self, machine)
-        #self.switch_pressed_at = time.monotonic()
-        if audio.playing:
-            audio.pause()
-
-    def exit(self, machine):
-        State.exit(self, machine)
-
-    def update(self, machine):
-        if switch.fell:
-            if audio.paused:
-                audio.resume()
-            machine.resume_state(machine.paused_state)
-        elif not switch.value:
-            if time.monotonic() - self.switch_pressed_at > 1.0:
-                machine.go_to_state('raising')
-"""
 
 
 class StartupState(State):

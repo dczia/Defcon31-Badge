@@ -22,17 +22,21 @@ import adafruit_displayio_ssd1306
 # OLED Screen
 displayio.release_displays()
 i2c = io.I2C(board.GP15, board.GP14)
-width = 128
-height = 32
-line = 1
-line_height = 10
-offset = 5
-highlight = 1
-shift = 0
-list_length = 0
-total_lines = 3
+display_info = {}
+display_info["width"] = 128
+display_info["height"] = 32
+display_info["line"] = 1
+display_info["line_height"] = 10
+display_info["offset"] = 5
+display_info["highlight"] = 1
+display_info["shift"] = 0
+display_info["list_length"] = 0
+display_info["total_lines"] = 3
+
 display_bus = displayio.I2CDisplay(i2c, device_address=0x3C)
-display = adafruit_displayio_ssd1306.SSD1306(display_bus, width=width, height=height)
+display = adafruit_displayio_ssd1306.SSD1306(
+    display_bus, width=display_info["width"], height=display_info["height"]
+)
 
 # Neopixels
 pixel_pin = board.GP28
