@@ -441,8 +441,6 @@ class StartupState(State):
 
 
 class MenuState(State):
-    last_position = -100
-
     menu_items = [
         {
             "name": "flashy",
@@ -471,15 +469,17 @@ class MenuState(State):
         return "menu"
 
     def enter(self, machine):
+        self.last_position = -4096
+        self.rainbow = Rainbow(neopixels, speed=0.1)
         State.enter(self, machine)
 
     def exit(self, machine):
+        encoder_1.position = 0
         State.exit(self, machine)
 
     def update(self, machine):
         # Code for moving through menu and selecting mode
-        rainbow = Rainbow(neopixels, speed=0.1)
-        rainbow.animate()
+        self.rainbow.animate()
         # Some code here to use an encoder to scroll through menu options, press to select one
         position = encoder_1.position
 
@@ -660,60 +660,59 @@ class MIDIState(State):
                 machine.go_to_state("menu")
                 run_midi = False
 
-
 class FlashyState(State):
-    last_position = encoder_1.position
+    rainbow = False
+
+    menu_items = [
+        {
+            "function": "rainbow_chase",
+            "pretty": "Rainbow Chase",
+        },
+        {
+            "function": "rainbow",
+            "pretty": "Rainbow",
+        },
+    ]
 
     @property
     def name(self):
         return "flashy"
 
     def enter(self, machine):
+        self.last_position = -4096
         State.enter(self, machine)
 
     def exit(self, machine):
+        neopixels.fill((255, 0, 0))
+        neopixels.show()
+        encoder_1.position = 0
         State.exit(self, machine)
 
     def update(self, machine):
-        party = True
-        choices = ["rainbow", "rainbow_chase"]
-        i = 0
-        selection = choices[i]
-        text = "Rainbow"
-        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-        display.show(text_area)
-        rainbow = Rainbow(neopixels, speed=0.1)
-        rainbow_chase = RainbowChase(neopixels, speed=0.1, size=5, spacing=3)
-        while party is True:
-            position = encoder_1.position
-            if position > self.last_position:
-                if i == len(choices):
-                    i = 0
-                selection = choices[i]
-                i += 1
-                if selection == "rainbow":
-                    text = "Rainbow"
-                    text_area = label.Label(
-                        terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
-                    )
-                    display.show(text_area)
-                    rainbow_chase.freeze()
-                    rainbow.animate()
-                if selection == "rainbow_chase":
-                    text = "Rainbow Chase"
-                    text_area = label.Label(
-                        terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
-                    )
-                    display.show(text_area)
-                    rainbow.freeze()
-                    rainbow_chase.animate()
+        position = encoder_1.position
+        if position != self.last_position:
+            index = position % len(
+                self.menu_items
+            )  # Generate a valid index from the position
+            pretty_name = self.menu_items[index]["pretty"]
+            text = str.format("{}: {}", index, pretty_name)
+            text_area = label.Label(
+                terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
+            )
+            display.show(text_area)
+            self.last_position = position
+            if self.menu_items[index]["function"] == "rainbow":
+                self.rainbow = Rainbow(neopixels, speed=0.1)
+            elif self.menu_items[index]["function"] == "rainbow_chase":
+                self.rainbow = RainbowChase(neopixels, speed=0.1)
+        else:
+            # All animations need to impliment animate() as their step function
+            if self.rainbow and self.rainbow.animate:
+                self.rainbow.animate()
 
-            enc_buttons_event = enc_buttons.events.get()
-            if enc_buttons_event and enc_buttons_event.pressed:
-                neopixels.fill((255, 0, 0))
-                neopixels.show()
-                machine.go_to_state("menu")
-                party = False
+        enc_buttons_event = enc_buttons.events.get()
+        if enc_buttons_event and enc_buttons_event.pressed:
+            machine.go_to_state("menu")
 
 class HIDState(State):
     last_position = 0
