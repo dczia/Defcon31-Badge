@@ -23,14 +23,16 @@ import board
 import audiobusio
 import audiocore
 import audiomixer
+import usb_hid
 from adafruit_midi.note_on import NoteOn
 from adafruit_midi.note_off import NoteOff
 from adafruit_midi.control_change import ControlChange
 from adafruit_led_animation.animation.rainbow import Rainbow
 from adafruit_led_animation.animation.rainbowchase import RainbowChase
-
-# import gc
-
+from adafruit_hid.consumer_control import ConsumerControl
+from adafruit_hid.consumer_control_code import ConsumerControlCode
+from adafruit_hid.keyboard import Keyboard
+from adafruit_hid.keycode import Keycode
 
 # Setup audio
 audio = audiobusio.I2SOut(board.GP0, board.GP1, board.GP2)
@@ -464,6 +466,10 @@ class MenuState(State):
             "name": "midi_controller",
             "pretty": "MIDI Controller",
         },
+        {
+            "name": "hid",
+            "pretty": "USB HID Mode",
+        },
     ]
 
     @property
@@ -715,6 +721,67 @@ class FlashyState(State):
                 machine.go_to_state("menu")
                 party = False
 
+class HIDState(State):
+    last_position = 0
+    kbd = Keyboard(usb_hid.devices)
+    consumer_control = ConsumerControl(usb_hid.devices)
+
+    keymap = [
+        Keycode.KEYPAD_ZERO,
+        Keycode.KEYPAD_ONE,
+        Keycode.KEYPAD_TWO,
+        Keycode.KEYPAD_THREE,
+        Keycode.KEYPAD_FOUR,
+        Keycode.KEYPAD_FIVE,
+        Keycode.KEYPAD_SIX,
+        Keycode.KEYPAD_SEVEN,
+        Keycode.KEYPAD_EIGHT,
+    ]
+
+    @property
+    def name(self):
+        return "hid"
+
+    def enter(self, machine):
+        text = "HID Controller"
+        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+        display.show(text_area)
+        cur_position = encoder_1.position
+        State.enter(self, machine)
+
+    def exit(self, machine):
+        encoder_1.position = 0
+        State.exit(self, machine)
+
+    def update(self, machine):
+        cur_position = encoder_1.position
+        if cur_position != self.last_position:
+            if cur_position > self.last_position:
+                print("Encoder increased")
+                self.consumer_control.send(ConsumerControlCode.VOLUME_INCREMENT)
+            else:
+                print("Encoder decreased")
+                self.consumer_control.send(ConsumerControlCode.VOLUME_DECREMENT)
+            self.last_position = cur_position
+        #
+        # Handle keyswitches
+        #
+        key_event = keys.events.get()
+        if key_event:
+            if key_event.pressed:
+                print("Key pressed:", key_event.key_number)
+                self.kbd.press(self.keymap[key_event.key_number])
+                neopixels[key_event.key_number] = (255, 0, 0)
+            if key_event.released:
+                print("Key released:", key_event.key_number)
+                self.kbd.release(self.keymap[key_event.key_number])
+                neopixels[key_event.key_number] = (255, 255, 255)
+
+        enc_buttons_event = enc_buttons.events.get()
+        if enc_buttons_event and enc_buttons_event.pressed:
+            neopixels.fill((255, 0, 0))
+            neopixels.show()
+            machine.go_to_state("menu")
 
 machine = StateMachine()
 machine.add_state(StartupState())
@@ -723,6 +790,7 @@ machine.add_state(SequencerState())
 machine.add_state(SamplerState())
 machine.add_state(MIDIState())
 machine.add_state(FlashyState())
+machine.add_state(HIDState())
 
 machine.go_to_state("menu")
 
