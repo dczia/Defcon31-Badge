@@ -5,7 +5,7 @@ import storage
 import adafruit_sdcard
 
 # import microcontroller
-import audiocore
+# import audiocore
 import audiobusio
 import rotaryio
 import keypad
@@ -74,7 +74,7 @@ keys = keypad.Keys(keyswitch_pins, value_when_pressed=False, pull=True)
 # neopixels.fill(OFF_COLOR)
 
 # Setup rotary encoders
-encoder_1 = rotaryio.IncrementalEncoder(board.GP4, board.GP5, 4)
+encoder_1 = rotaryio.IncrementalEncoder(board.GP4, board.GP5)
 
 # for tracking the direction and button state
 previous_value = True
