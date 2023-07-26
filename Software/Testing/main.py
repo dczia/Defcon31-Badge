@@ -326,12 +326,6 @@ def launch(filename):
     exec(open(filename).read())
     show_menu(file_list)
 
-
-# Get the list of Python files and display the menu
-file_list = get_files()
-show_menu(file_list)
-
-
 class State(object):
     def __init__(self):
         pass
