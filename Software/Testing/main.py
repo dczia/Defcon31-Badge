@@ -627,38 +627,32 @@ class MIDIState(State):
         return "midi_controller"
 
     def enter(self, machine):
+        text = "MIDI Controller"
+        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+        display.show(text_area)
+        neopixels.fill((255, 0, 0))
+        neopixels.show()
         State.enter(self, machine)
 
     def exit(self, machine):
         State.exit(self, machine)
 
     def update(self, machine):
-        text = "MIDI Controller"
-        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-        display.show(text_area)
+        key_event = keys.events.get()
+        if key_event:
+            if key_event.pressed:
+                key = key_event.key_number
+                send_note_on(key, 4)
+                neopixels[key] = (0, 0, 255)
+            if key_event.released:
+                key = key_event.key_number
+                send_note_off(key, 4)
+                neopixels[key] = (255, 0, 0)
 
-        neopixels.fill((255, 0, 0))
         neopixels.show()
-        run_midi = True
-        while run_midi is True:
-            key_event = keys.events.get()
-            if key_event:
-                if key_event.pressed:
-                    key = key_event.key_number
-                    send_note_on(key, 4)
-                    neopixels[key] = (0, 0, 255)
-                    neopixels.show()
-                if key_event.released:
-                    key = key_event.key_number
-                    send_note_off(key, 4)
-                    neopixels[key] = (255, 0, 0)
-                    neopixels.show()
-
-            enc_buttons_event = enc_buttons.events.get()
-            enc_buttons.events.clear()
-            if enc_buttons_event and enc_buttons_event.pressed:
-                machine.go_to_state("menu")
-                run_midi = False
+        enc_buttons_event = enc_buttons.events.get()
+        if enc_buttons_event and enc_buttons_event.pressed:
+            machine.go_to_state("menu")
 
 class FlashyState(State):
     rainbow = False
