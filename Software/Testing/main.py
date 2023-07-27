@@ -34,6 +34,7 @@ from adafruit_hid.consumer_control_code import ConsumerControlCode
 from adafruit_hid.keyboard import Keyboard
 from adafruit_hid.keycode import Keycode
 
+
 # Setup audio
 audio = audiobusio.I2SOut(board.GP0, board.GP1, board.GP2)
 num_voices = 9
@@ -45,6 +46,28 @@ mixer = audiomixer.Mixer(
     samples_signed=True,
 )
 
+def menu_select(last_position, menu_items):
+    item_selected = False
+    while item_selected is False:
+        current_position = encoder_1.position
+
+        # Generate a valid index from the position
+        if current_position != last_position:
+            index = current_position % len(
+                menu_items
+            ) 
+            pretty_name = menu_items[index]["pretty"]
+            text = str.format("{}: {}", index, pretty_name)
+            text_area = label.Label(
+                terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
+            )
+            display.show(text_area)
+            last_position = current_position
+
+        enc_buttons_event = enc_buttons.events.get()
+        if enc_buttons_event and enc_buttons_event.pressed:
+            index = current_position % len(menu_items)
+            return(menu_items[index]["name"])
 
 def sequence_selector(value, min_val, max_val, increment, key_val, encoder_pos):
 
@@ -255,7 +278,7 @@ def get_files():
     files = listdir()
     menu = []
     for file in files:
-        if file.endswith(".py"):
+        if file.endswith(".wav"):
             menu.append(file)
 
     return menu
@@ -553,7 +576,7 @@ class SamplerState(State):
 
         # Start sequencer
         ### Need to figure out a sensible place to move this to resolve scope issues
-        sequencer = run_sequencer()
+
 
         ### Add menu and programming portions here
         ### Start menu emulating code
@@ -572,12 +595,21 @@ class SamplerState(State):
                     sequencer.active_sequences[0].fname = "Snare.wav"
 
                     sequencer.add_sequence(file_sequence())
-                    sequencer.active_sequences[1].fname = 'Tom.wav'
+                    sequencer.active_sequences[1].fname = "Tom.wav"
                     sequencer.active_sequences[1].set_sequence()
 
                     sequencer.add_sequence(file_sequence())
-                    sequencer.active_sequences[2].fname = 'Kick.wav'
-                    sequencer.active_sequences[2].sequence = [[True, .5],[False, .5],[True, .5],[False, .5],[True, .5],[False, .5],[True, .5],[False, .5]]
+                    sequencer.active_sequences[2].fname = "Kick.wav"
+                    sequencer.active_sequences[2].sequence = [
+                        [True, 0.5],
+                        [False, 0.5],
+                        [True, 0.5],
+                        [False, 0.5],
+                        [True, 0.5],
+                        [False, 0.5],
+                        [True, 0.5],
+                        [False, 0.5],
+                    ]
                     selection = False
                 if key == 1:
                     selection = False
@@ -587,38 +619,86 @@ class SamplerState(State):
         text = "Sampler"
         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
         display.show(text_area)
+        
+        # Show selection menu
 
-        ### Need to modify to move with menu selection:
-        dummy_menu_state = 0
-        sequencer.active_sequences[dummy_menu_state].show_sequence()
+        seq_menu_items = [
+            {
+                "name": "add_sequence",
+                "pretty": "Add Sequence",
+            },
+            {
+                "name": "edit_sequence",
+                "pretty": "Edit Sequence",
+            },
+            {
+                "name": "play_sequence",
+                "pretty": "Play Sequence",
+            },
+        ]
 
-        # Menu mode
-        while sequencer.play_music == False:
+        selection = menu_select(machine.last_enc1_pos, seq_menu_items)
+        print(selection)
+        if selection is 'add_sequence':
+            # Display select file
+            text = 'Select File'
+            text_area = label.Label(
+                terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
+            )
+            display.show(text_area)
+            ### Add two lines of display, second line is file select
 
-            # Menu structure
-            # Add sequence -> select file -> sequencer.add_sequence(file_sequence())
-            # Edit sequence -> select existing sequence -> sequence selector
-            key_event = keys.events.get()
-            if key_event and key_event.pressed:
-                key = key_event.key_number
-                machine.last_enc1_pos = sequence_selector(
-                    sequencer.active_sequences[dummy_menu_state].sequence,
-                    0,
-                    1,
-                    0.05,
-                    key,
-                    machine.last_enc1_pos,
-                )
-                sequencer.active_sequences[dummy_menu_state].show_sequence()
-
-            ### Update to play/pause button for final hardware
             enc_buttons_event = enc_buttons.events.get()
             if enc_buttons_event and enc_buttons_event.pressed:
-                sequencer.play_music = True
+                pass
 
-        # Play mode
-        while sequencer.play_music == True:
-            sequencer.play_sequence()
+        if selection == 'edit_sequence':
+            editing_sequence = True
+            while editing_sequence == True:
+                print('test')
+                # Display
+                text = 'Select Sequence'
+                text_area = label.Label(
+                    terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
+                )
+                display.show(text_area)
+
+                ### Add two lines of display, second line is sequence select
+                dummy_menu_state = 0 # Modify to index based on selected
+                sequencer.active_sequences[dummy_menu_state].show_sequence()
+
+                ### Code to edit a sequence here
+                key_event = keys.events.get()
+                if key_event and key_event.pressed:
+                    key = key_event.key_number
+                    machine.last_enc1_pos = sequence_selector(
+                        sequencer.active_sequences[dummy_menu_state].sequence,
+                        0,
+                        1,
+                        0.05,
+                        key,
+                        machine.last_enc1_pos,
+                    )
+                    sequencer.active_sequences[dummy_menu_state].show_sequence()
+                    neopixels.show()
+
+                ### Update to play/pause button for final hardware
+                enc_buttons_event = enc_buttons.events.get()
+                if enc_buttons_event and enc_buttons_event.pressed:
+                    editing_sequence = False
+                ### Press encoder to exit
+                ### Press play to start
+
+        if selection is 'play_sequence':
+            sequencer.play_music = True
+                # Menu structure
+                # Add sequence -> select file -> sequencer.add_sequence(file_sequence())
+                # Edit sequence -> select existing sequence -> sequence selector
+
+
+            # Play mode
+            while sequencer.play_music == True:
+                sequencer.play_sequence()
 
 
 class MIDIState(State):
@@ -781,6 +861,7 @@ machine.add_state(SamplerState())
 machine.add_state(MIDIState())
 machine.add_state(FlashyState())
 machine.add_state(HIDState())
+sequencer = run_sequencer()
 
 machine.go_to_state("menu")
 
