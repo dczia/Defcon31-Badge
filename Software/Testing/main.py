@@ -74,7 +74,6 @@ def menu_select(last_position, menu_items):
 
 
 def sequence_selector(value, min_val, max_val, increment, key_val, encoder_pos):
-
     selection = True
     vel_change = False
     # Display current value
@@ -102,7 +101,6 @@ def sequence_selector(value, min_val, max_val, increment, key_val, encoder_pos):
 
         # Exit selection menu if key released
         if key_event and key_event.released:
-
             if key_event.key_number == key_val:
                 if vel_change == False:
                     value[key_val][0] = not value[key_val][0]
@@ -200,7 +198,6 @@ class run_sequencer:
             pass
 
     def play_step(self):
-
         # Calculate step duration
         self.step_start = ticks_ms()
         self.step_end = self.step_start + self.step_length
@@ -219,7 +216,6 @@ class run_sequencer:
 
         # Wait for beat duration and watch for stop
         while ticks_ms() < self.step_end:
-
             ### Update to play/pause button for final hardware
             enc_buttons_event = enc_buttons.events.get()
             if enc_buttons_event and enc_buttons_event.pressed:
@@ -241,10 +237,8 @@ class run_sequencer:
             self.step = 0
 
     def play_sequence(self):
-
         # Loop through active sequences and load wav files
         for item in self.active_sequences:
-
             # Load wav files to play
             self.wav_files.append(open(item.fname, "rb"))
             self.loaded_wavs.append(audiocore.WaveFile(self.wav_files[-1]))
@@ -443,33 +437,59 @@ class PausedState(State):
 
 
 class StartupState(State):
+    color = (0, 0, 0)
+    timer = 0
+    stage = 0
+
     @property
     def name(self):
         return "startup"
 
     def enter(self, machine):
+        neopixels.fill((0, 0, 0))
         State.enter(self, machine)
 
     def exit(self, machine):
+        neopixels.fill((255, 0, 0))
+        self.color = (0, 0, 0)
+        self.timer = 0
+        self.stage = 0
         State.exit(self, machine)
 
     def update(self, machine):
-        neopixels.fill((0, 0, 0))
-        text = "DCZia\nElectric Sampler"
-        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=5)
-        display.show(text_area)
-        time.sleep(2)
-        text = "Fueled by Green Chile\nand Solder"
-        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=10)
-        display.show(text_area)
-        time.sleep(2)
-        # Code for any startup animations, etc.
-        for i in range(0, 8):
-            neopixels[i] = (0, 255, 0)
-            time.sleep(0.2)
-        neopixels.fill((255, 0, 0))
-        time.sleep(0.2)
-        machine.go_to_state("menu")
+        self.timer = self.timer + 1
+        if self.stage == 0:
+            text = "       DCZia\n  Electric Sampler"
+            if len(text) > self.timer:
+                text = text[0 : self.timer]
+            text_area = label.Label(
+                terminalio.FONT, text=text, color=0xFFFFFF, x=2, y=5
+            )
+            display.show(text_area)
+            self.color = (self.timer, self.timer, 0)
+            if self.timer > (len(text) * 1.5):
+                self.timer = 0
+                self.stage = 1
+        elif self.stage == 1:
+            text = "Fueled by Green Chile\n     and Solder"
+            if len(text) > self.timer:
+                text = text[0 : self.timer]
+            text_area = label.Label(
+                terminalio.FONT, text=text, color=0xFFFFFF, x=2, y=10
+            )
+            display.show(text_area)
+            if self.timer > (len(text) * 1.5):
+                self.timer = 0
+                self.stage = 2
+        else:
+            if self.timer < (255 * 8):
+                color = (0, self.timer % 255, 0)
+                neopixels[self.timer // 255] = color
+                neopixels.show()
+                self.timer = self.timer + 1  # make it faster
+            else:
+                time.sleep(0.1)
+                machine.go_to_state("menu")
 
 
 class MenuState(State):
@@ -493,6 +513,10 @@ class MenuState(State):
         {
             "name": "hid",
             "pretty": "USB HID Mode",
+        },
+        {
+            "name": "startup",
+            "pretty": "Startup State (test)",
         },
     ]
 
@@ -917,7 +941,7 @@ machine.add_state(FlashyState())
 machine.add_state(HIDState())
 sequencer = run_sequencer()
 
-machine.go_to_state("menu")
+machine.go_to_state("startup")
 
 while True:
     machine.update()
