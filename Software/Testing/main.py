@@ -591,6 +591,10 @@ class SamplerState(State):
             "pretty": "Add Sequence",
         },
         {
+            "name": "remove_sequence",
+            "pretty": "Remove Sequence",
+        },
+        {
             "name": "edit_sequence",
             "pretty": "Edit Sequence",
         },
@@ -675,7 +679,22 @@ class SamplerState(State):
             enc_buttons_event = enc_buttons.events.get()
             if enc_buttons_event and enc_buttons_event.pressed:
                 pass
-
+        if selection == "remove_sequence":
+            if len(sequencer.active_sequences) == 0:
+                text = "No Active Sequences"
+                text_area = label.Label(
+                terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
+                )
+                display.show(text_area)
+                time.sleep(1)
+            else:
+                remove_seq = self.select_sequence(
+                    sequencer.active_sequences
+                )
+                print(remove_seq)
+                del sequencer.active_sequences[remove_seq]
+                    
+         
         if selection == "edit_sequence":
 
             # Check if sequences exist
