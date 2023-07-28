@@ -789,9 +789,6 @@ class FlashyState(State):
             machine.go_to_state("menu")
 
 class HIDState(State):
-    kbd = Keyboard(usb_hid.devices)
-    consumer_control = ConsumerControl(usb_hid.devices)
-
     keymap = [
         Keycode.KEYPAD_ZERO,
         Keycode.KEYPAD_ONE,
@@ -807,6 +804,26 @@ class HIDState(State):
     @property
     def name(self):
         return "hid"
+
+    def __init__(self):
+        try:
+            self.kbd = Keyboard(usb_hid.devices)
+            self.consumer_control = ConsumerControl(usb_hid.devices)
+        except:
+            # Dummy functions when we aren't plugged into a computer
+            class fakekb:
+                def press(self, foo):
+                    print("No keyboard:", foo)
+
+                def release(self, foo):
+                    print("No keyboard:", foo)
+
+                def send(self, foo):
+                    print("No keyboard:", foo)
+
+            self.kbd = fakekb()
+            self.consumer_control = fakekb()
+            print("hello")
 
     def enter(self, machine):
         text = "HID Controller"
