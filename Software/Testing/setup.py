@@ -3,7 +3,7 @@ import busio as io
 import digitalio
 import storage
 import adafruit_sdcard
-
+import time
 # import microcontroller
 # import audiocore
 import audiobusio
@@ -15,10 +15,11 @@ import usb_midi
 
 # Display imports
 import displayio
+import terminalio
 import adafruit_displayio_ssd1306
+from adafruit_display_text import label
 
 # Setup I/O
-
 
 # OLED Screen
 displayio.release_displays()
@@ -91,11 +92,17 @@ midi_serial = adafruit_midi.MIDI(
 midi_usb = adafruit_midi.MIDI(midi_out=usb_midi.ports[1], out_channel=0)
 
 # Setup the SD card and mount it as /sd
-spi = io.SPI(board.GP10, board.GP11, board.GP12)
-cs = digitalio.DigitalInOut(board.GP13)
-sdcard = adafruit_sdcard.SDCard(spi, cs)
-vfs = storage.VfsFat(sdcard)
-storage.mount(vfs, "/sd")
+try:
+    spi = io.SPI(board.GP10, board.GP11, board.GP12)
+    cs = digitalio.DigitalInOut(board.GP13)
+    sdcard = adafruit_sdcard.SDCard(spi, cs)
+    vfs = storage.VfsFat(sdcard)
+    storage.mount(vfs, "/sd")
+except:
+    text = "No SD Card Found!"
+    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+    display.show(text_area)
+    time.sleep(5)
 
 # Setup audio
 audio = audiobusio.I2SOut(board.GP0, board.GP1, board.GP2)

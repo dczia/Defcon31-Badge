@@ -78,7 +78,6 @@ def menu_select(last_position, menu_items):
             return menu_items[index]["name"]
 
 
-
 # Function to program sequence values, should be used after a keypress
 # On key release toggle state
 # On key held and encoder turned, value changed
