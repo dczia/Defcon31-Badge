@@ -53,7 +53,8 @@ clk_src = ""
 # Function to scroll through a list of menu items and return a selection on encoder press
 def menu_select(last_position, menu_items):
     # Force last_position to not equal encoder_1.position and be % = 0
-    last_position = encoder_1.position + len(menu_items)
+    last_position = -len(menu_items)
+    encoder_1.position = 0
     item_selected = False
     while item_selected is False:
         current_position = encoder_1.position
@@ -80,9 +81,10 @@ def menu_select(last_position, menu_items):
 # Function to program sequence values, should be used after a keypress
 # On key release toggle state
 # On key held and encoder turned, value changed
-def sequence_selector(value, min_val, max_val, increment, key_val, encoder_pos):
+def sequence_selector(value, min_val, max_val, increment, key_val):
     selection = True
     vel_change = False
+    encoder_pos = encoder_1.position
     # Display current value
     while selection:
         text = f"Step {key_val}: {value[key_val][1]:.2f}"
@@ -109,10 +111,9 @@ def sequence_selector(value, min_val, max_val, increment, key_val, encoder_pos):
         # Exit selection menu if key released
         if key_event and key_event.released:
             if key_event.key_number == key_val:
-                if vel_change:
+                if not vel_change:
                     value[key_val][0] = not value[key_val][0]
                 selection = False
-    return encoder_pos
 
 
 # File sequencer class
@@ -151,9 +152,10 @@ class file_sequence:
         for index, item in enumerate(self.sequence):
             if item[0]:
                 neopixels[index] = (0, 0, 255)
+                neopixels.show()
             elif item[0] is False:
                 neopixels[index] = (255, 0, 0)
-            time.sleep(0.01)
+                neopixels.show()
 
 
 class run_sequencer:
@@ -583,6 +585,25 @@ class SequencerState(State):
 
 
 class SamplerState(State):
+    seq_menu_items = [
+        {
+            "name": "add_sequence",
+            "pretty": "Add Sequence",
+        },
+        {
+            "name": "edit_sequence",
+            "pretty": "Edit Sequence",
+        },
+        {
+            "name": "play_sequence",
+            "pretty": "Play Sequence",
+        },
+        {
+            "name": "exit",
+            "pretty": "Exit",
+        },
+    ]
+
     @property
     def name(self):
         return "sampler"
@@ -593,42 +614,6 @@ class SamplerState(State):
         display.show(text_area)
         neopixels.fill((255, 0, 0))
         neopixels.show()
-        ### Start menu emulating code (remove when menu working)
-        """
-        text = "Add Dummy Sequences?\n Key1: yes, Key2: no"
-        text_area = label.Label(
-            terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
-        )
-        display.show(text_area)
-        key_event = keys.events.get()
-        if key_event and key_event.pressed:
-            key = key_event.key_number
-            if key == 0:
-                sequencer.add_sequence(file_sequence())
-                sequencer.active_sequences[0].fname = "./samples/Snare.wav"
-
-                sequencer.add_sequence(file_sequence())
-                sequencer.active_sequences[1].fname = "./samples/Tom.wav"
-                sequencer.active_sequences[1].set_sequence()
-
-                sequencer.add_sequence(file_sequence())
-                sequencer.active_sequences[2].fname = "./samples/Kick.wav"
-                sequencer.active_sequences[2].sequence = [
-                    [True, 0.5],
-                    [False, 0.5],
-                    [True, 0.5],
-                    [False, 0.5],
-                    [True, 0.5],
-                    [False, 0.5],
-                    [True, 0.5],
-                    [False, 0.5],
-                ]
-                selection = False
-            if key == 1:
-                selection = False
-        """
-        ### End menu emulating code (remove when menu implemented)
-
         State.enter(self, machine)
 
     def exit(self, machine):
@@ -654,38 +639,21 @@ class SamplerState(State):
 
     def update(self, machine):
 
-        ### Add menu and programming portions here
         # Show selection menu
-        seq_menu_items = [
-            {
-                "name": "add_sequence",
-                "pretty": "Add Sequence",
-            },
-            {
-                "name": "edit_sequence",
-                "pretty": "Edit Sequence",
-            },
-            {
-                "name": "play_sequence",
-                "pretty": "Play Sequence",
-            },
-            {
-                "name": "exit",
-                "pretty": "Exit",
-            },
-        ]
-
-        selection = menu_select(machine.last_enc1_pos, seq_menu_items)
-        if selection is "add_sequence":
+        selection = menu_select(machine.last_enc1_pos, self.seq_menu_items)
+        if selection == "add_sequence":
             # Display select file
             text = "Select File"
             text_area = label.Label(
                 terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
             )
             display.show(text_area)
+            time.sleep(1)
+            # Select file
             selected_file = self.select_wav()
             sequencer.add_sequence(file_sequence())
 
+            # Create new sequence
             sequencer.active_sequences[-1].fname = str(f"/samples/{selected_file}")
             sequencer.active_sequences[-1].sequence = [
                 [False, 0.5],
@@ -697,63 +665,72 @@ class SamplerState(State):
                 [False, 0.5],
                 [False, 0.5],
             ]
-
+            # Display select file
+            text = "Sequence Created"
+            text_area = label.Label(
+                terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
+            )
+            display.show(text_area)
+            time.sleep(1)
             enc_buttons_event = enc_buttons.events.get()
             if enc_buttons_event and enc_buttons_event.pressed:
                 pass
 
         if selection == "edit_sequence":
-            editing_sequence = True
 
-            # Display
-            text = "Select Sequence"
-            text_area = label.Label(
+            # Check if sequences exist
+            if len(sequencer.active_sequences) == 0:
+                text = "No Active Sequences"
+                text_area = label.Label(
                 terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
-            )
-            display.show(text_area)
+                )
+                display.show(text_area)
+                time.sleep(1)
+            else:
+                editing_sequence = True
 
-            # Select sequence
-            print(sequencer.active_sequences)
-            selected_sequence = self.select_sequence(
-                sequencer.active_sequences
-            )  # Modify to index based on selected
-            sequencer.active_sequences[selected_sequence].show_sequence()
+                # Select sequence
+                selected_sequence = self.select_sequence(
+                    sequencer.active_sequences
+                )  # Modify to index based on selected
+                sequencer.active_sequences[selected_sequence].show_sequence()
 
-            # Display
-            text = f"Edit {sequencer.active_sequences[selected_sequence].fname}"
-            text_area = label.Label(
-                terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
-            )
-            display.show(text_area)
+                # Display
+                text = f"Edit {sequencer.active_sequences[selected_sequence].fname}"
+                text_area = label.Label(
+                    terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
+                )
+                display.show(text_area)
 
-            while editing_sequence == True:
+                sequencer.active_sequences[selected_sequence].show_sequence()
+                neopixels.show()
+                machine.last_enc1_pos = encoder_1.position
+                while editing_sequence is True:
 
-                # Code to edit a sequence here
-                key_event = keys.events.get()
-                if key_event and key_event.pressed:
-                    key = key_event.key_number
-                    machine.last_enc1_pos = sequence_selector(
-                        sequencer.active_sequences[selected_sequence].sequence,
-                        0,
-                        1,
-                        0.05,
-                        key,
-                        machine.last_enc1_pos,
-                    )
-                    sequencer.active_sequences[selected_sequence].show_sequence()
-                    neopixels.show()
+                    # Code to edit a sequence here
+                    key_event = keys.events.get()
+                    if key_event and key_event.pressed:
+                        key = key_event.key_number
+                        sequence_selector(
+                            sequencer.active_sequences[selected_sequence].sequence,
+                            0,
+                            1,
+                            0.05,
+                            key,
+                        )
+                        sequencer.active_sequences[selected_sequence].show_sequence()
+                        neopixels.show()
+                    # Update to play/pause button for final hardware
+                    enc_buttons_event = enc_buttons.events.get()
+                    if enc_buttons_event and enc_buttons_event.pressed:
+                        editing_sequence = False
+                    # Press encoder to exit
+                    # Press play to start
 
-                # Update to play/pause button for final hardware
-                enc_buttons_event = enc_buttons.events.get()
-                if enc_buttons_event and enc_buttons_event.pressed:
-                    editing_sequence = False
-                # Press encoder to exit
-                # Press play to start
-
-        if selection is "play_sequence":
+        if selection == "play_sequence":
             machine.go_to_state("sampler_play")
 
-        if selection is "exit":
+        if selection == "exit":
             machine.go_to_state("menu")
 
 
@@ -785,6 +762,9 @@ class SamplerPlay(State):
     def update(self, machine):
         sequencer.play_sequence()
         if audio.playing is False:
+            sequencer.step = 0
+            sequencer.wav_files = []
+            sequencer.loaded_wavs = []
             machine.go_to_state("sampler")
 
 
