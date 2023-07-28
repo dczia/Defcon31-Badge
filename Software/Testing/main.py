@@ -6,8 +6,6 @@ from setup import (
     midi_serial,
     midi_usb,
     total_lines,
-    shift,
-    highlight,
     line_height,
     width,
     offset,
@@ -49,6 +47,7 @@ mixer = audiomixer.Mixer(
     bits_per_sample=16,
     samples_signed=True,
 )
+clk_src = ""
 
 
 def menu_select(last_position, menu_items):
@@ -77,7 +76,7 @@ def sequence_selector(value, min_val, max_val, increment, key_val, encoder_pos):
     selection = True
     vel_change = False
     # Display current value
-    while selection == True:
+    while selection:
         text = f"Step {key_val}: {value[key_val][1]:.2f}"
         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=5)
         display.show(text_area)
@@ -102,7 +101,7 @@ def sequence_selector(value, min_val, max_val, increment, key_val, encoder_pos):
         # Exit selection menu if key released
         if key_event and key_event.released:
             if key_event.key_number == key_val:
-                if vel_change == False:
+                if vel_change:
                     value[key_val][0] = not value[key_val][0]
                 selection = False
     return encoder_pos
@@ -148,9 +147,9 @@ class file_sequence:
 
     def show_sequence(self):
         for index, item in enumerate(self.sequence):
-            if item[0] == True:
+            if item[0]:
                 neopixels[index] = (0, 0, 255)
-            elif item[0] == False:
+            elif item[0] is False:
                 neopixels[index] = (255, 0, 0)
             time.sleep(0.01)
 
@@ -184,7 +183,7 @@ class run_sequencer:
     def load_sequence(self):
         pass
 
-    ### Select where clock is coming from (not critical, but high priority nice-to-have)
+    # Select where clock is coming from (not critical, but high priority nice-to-have)
     def set_clk_src(self):
         # clk_options = ["ext, midi, int"]
         # Display clk_options on screen, scroll/select
@@ -204,7 +203,7 @@ class run_sequencer:
 
         # Loop through active sequences and play indicated steps
         for index, item in enumerate(self.active_sequences):
-            if item.sequence[self.step][0] == True:
+            if item.sequence[self.step][0]:
                 # Set volume based on input value
                 mixer.voice[index].level = item.sequence[self.step][1]
                 mixer.voice[index].play(self.loaded_wavs[index])
@@ -216,7 +215,7 @@ class run_sequencer:
 
         # Wait for beat duration and watch for stop
         while ticks_ms() < self.step_end:
-            ### Update to play/pause button for final hardware
+            # Update to play/pause button for final hardware
             enc_buttons_event = enc_buttons.events.get()
             if enc_buttons_event and enc_buttons_event.pressed:
                 for index, item in enumerate(self.active_sequences):
@@ -249,7 +248,7 @@ class run_sequencer:
 
         self.play_music = True
         audio.play(mixer)
-        while self.play_music == True:
+        while self.play_music:
             self.play_step()
             self.step_update()
         audio.stop()
@@ -602,18 +601,18 @@ class SamplerState(State):
         State.exit(self, machine)
 
     def update(self, machine):
-        ### Show menu text (Update with new menu)
+        # Show menu text (Update with new menu)
         text = "Sampler"
         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
         display.show(text_area)
 
         # Start sequencer
-        ### Need to figure out a sensible place to move this to resolve scope issues
+        # Need to figure out a sensible place to move this to resolve scope issues
 
-        ### Add menu and programming portions here
-        ### Start menu emulating code
+        # Add menu and programming portions here
+        # Start menu emulating code
         selection = True
-        while selection == True:
+        while selection:
             text = "Add Dummy Sequences?\n Key1: yes, Key2: no"
             text_area = label.Label(
                 terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
@@ -646,7 +645,7 @@ class SamplerState(State):
                 if key == 1:
                     selection = False
 
-        ### End menu emulating code
+        # End menu emulating code
 
         text = "Sampler"
         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
@@ -671,14 +670,14 @@ class SamplerState(State):
 
         selection = menu_select(machine.last_enc1_pos, seq_menu_items)
         print(selection)
-        if selection is "add_sequence":
+        if selection == "add_sequence":
             # Display select file
             text = "Select File"
             text_area = label.Label(
                 terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
             )
             display.show(text_area)
-            ### Add two lines of display, second line is file select
+            # Add two lines of display, second line is file select
 
             enc_buttons_event = enc_buttons.events.get()
             if enc_buttons_event and enc_buttons_event.pressed:
@@ -686,7 +685,7 @@ class SamplerState(State):
 
         if selection == "edit_sequence":
             editing_sequence = True
-            while editing_sequence == True:
+            while editing_sequence:
                 print("test")
                 # Display
                 text = "Select Sequence"
@@ -695,11 +694,11 @@ class SamplerState(State):
                 )
                 display.show(text_area)
 
-                ### Add two lines of display, second line is sequence select
+                # Add two lines of display, second line is sequence select
                 dummy_menu_state = 0  # Modify to index based on selected
                 sequencer.active_sequences[dummy_menu_state].show_sequence()
 
-                ### Code to edit a sequence here
+                # Code to edit a sequence here
                 key_event = keys.events.get()
                 if key_event and key_event.pressed:
                     key = key_event.key_number
@@ -714,21 +713,21 @@ class SamplerState(State):
                     sequencer.active_sequences[dummy_menu_state].show_sequence()
                     neopixels.show()
 
-                ### Update to play/pause button for final hardware
+                # Update to play/pause button for final hardware
                 enc_buttons_event = enc_buttons.events.get()
                 if enc_buttons_event and enc_buttons_event.pressed:
                     editing_sequence = False
-                ### Press encoder to exit
-                ### Press play to start
+                # Press encoder to exit
+                # Press play to start
 
-        if selection is "play_sequence":
+        if selection == "play_sequence":
             sequencer.play_music = True
             # Menu structure
             # Add sequence -> select file -> sequencer.add_sequence(file_sequence())
             # Edit sequence -> select existing sequence -> sequence selector
 
             # Play mode
-            while sequencer.play_music == True:
+            while sequencer.play_music:
                 sequencer.play_sequence()
 
 
