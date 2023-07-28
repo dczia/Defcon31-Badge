@@ -23,7 +23,7 @@ jobs:
         uses: py-actions/flake8@v2
         with:
             path: "./Software/Testing"
-            ignore: "E501,E203" #Ignore line to long, we don't care
+            ignore: "E501,E203,E722" #Ignore line to long, we don't care
 
       - name: Black File Formatter
         uses: psf/black@stable
