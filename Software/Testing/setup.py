@@ -11,6 +11,7 @@ import rotaryio
 import keypad
 import neopixel
 import adafruit_midi
+import usb_midi
 
 # Display imports
 import displayio
@@ -87,6 +88,7 @@ midi_serial = adafruit_midi.MIDI(
     midi_out=midi_uart, out_channel=midi_serial_channel - 1
 )
 
+midi_usb = adafruit_midi.MIDI(midi_out=usb_midi.ports[1], out_channel=0)
 
 # Setup the SD card and mount it as /sd
 spi = io.SPI(board.GP10, board.GP11, board.GP12)

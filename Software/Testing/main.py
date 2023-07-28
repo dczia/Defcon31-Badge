@@ -4,6 +4,7 @@ from setup import (
     display,
     encoder_1,
     midi_serial,
+    midi_usb,
     total_lines,
     shift,
     highlight,
@@ -49,6 +50,7 @@ mixer = audiomixer.Mixer(
     samples_signed=True,
 )
 
+
 def menu_select(last_position, menu_items):
     item_selected = False
     while item_selected is False:
@@ -56,9 +58,7 @@ def menu_select(last_position, menu_items):
 
         # Generate a valid index from the position
         if current_position != last_position:
-            index = current_position % len(
-                menu_items
-            ) 
+            index = current_position % len(menu_items)
             pretty_name = menu_items[index]["pretty"]
             text = str.format("{}: {}", index, pretty_name)
             text_area = label.Label(
@@ -70,7 +70,8 @@ def menu_select(last_position, menu_items):
         enc_buttons_event = enc_buttons.events.get()
         if enc_buttons_event and enc_buttons_event.pressed:
             index = current_position % len(menu_items)
-            return(menu_items[index]["name"])
+            return menu_items[index]["name"]
+
 
 def sequence_selector(value, min_val, max_val, increment, key_val, encoder_pos):
 
@@ -259,19 +260,23 @@ class run_sequencer:
             self.step_update()
         audio.stop()
 
+
 # MIDI Functions
 def send_note_on(note, octv):
     note = (note) + (12 * octv)
     midi_serial.send(NoteOn(note, 120))
+    midi_usb.send(NoteOn(note, 120))
 
 
 def send_note_off(note, octv):
     note = (note) + (12 * octv)
     midi_serial.send(NoteOff(note, 0))
+    midi_usb.send(NoteOff(note, 120))
 
 
 def send_cc(number, val):
     midi_serial.send(ControlChange(number, val))
+    midi_usb.send(ControlChange(number, val))
 
 
 # Menu Functions
@@ -351,6 +356,7 @@ def launch(filename):
     time.sleep(3)
     exec(open(filename).read())
     show_menu(file_list)
+
 
 class State(object):
     def __init__(self):
@@ -580,7 +586,6 @@ class SamplerState(State):
         # Start sequencer
         ### Need to figure out a sensible place to move this to resolve scope issues
 
-
         ### Add menu and programming portions here
         ### Start menu emulating code
         selection = True
@@ -622,7 +627,7 @@ class SamplerState(State):
         text = "Sampler"
         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
         display.show(text_area)
-        
+
         # Show selection menu
 
         seq_menu_items = [
@@ -642,9 +647,9 @@ class SamplerState(State):
 
         selection = menu_select(machine.last_enc1_pos, seq_menu_items)
         print(selection)
-        if selection is 'add_sequence':
+        if selection is "add_sequence":
             # Display select file
-            text = 'Select File'
+            text = "Select File"
             text_area = label.Label(
                 terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
             )
@@ -655,19 +660,19 @@ class SamplerState(State):
             if enc_buttons_event and enc_buttons_event.pressed:
                 pass
 
-        if selection == 'edit_sequence':
+        if selection == "edit_sequence":
             editing_sequence = True
             while editing_sequence == True:
-                print('test')
+                print("test")
                 # Display
-                text = 'Select Sequence'
+                text = "Select Sequence"
                 text_area = label.Label(
                     terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
                 )
                 display.show(text_area)
 
                 ### Add two lines of display, second line is sequence select
-                dummy_menu_state = 0 # Modify to index based on selected
+                dummy_menu_state = 0  # Modify to index based on selected
                 sequencer.active_sequences[dummy_menu_state].show_sequence()
 
                 ### Code to edit a sequence here
@@ -692,12 +697,11 @@ class SamplerState(State):
                 ### Press encoder to exit
                 ### Press play to start
 
-        if selection is 'play_sequence':
+        if selection is "play_sequence":
             sequencer.play_music = True
-                # Menu structure
-                # Add sequence -> select file -> sequencer.add_sequence(file_sequence())
-                # Edit sequence -> select existing sequence -> sequence selector
-
+            # Menu structure
+            # Add sequence -> select file -> sequencer.add_sequence(file_sequence())
+            # Edit sequence -> select existing sequence -> sequence selector
 
             # Play mode
             while sequencer.play_music == True:
@@ -736,6 +740,7 @@ class MIDIState(State):
         enc_buttons_event = enc_buttons.events.get()
         if enc_buttons_event and enc_buttons_event.pressed:
             machine.go_to_state("menu")
+
 
 class FlashyState(State):
     animation = False
@@ -797,9 +802,18 @@ class FlashyState(State):
             elif self.menu_items[index]["function"] == "rainbow_comet":
                 self.animation = RainbowComet(neopixels, speed=0.1, tail_length=10)
             elif self.menu_items[index]["function"] == "rainbow_sparkle":
-                self.animation = RainbowSparkle(neopixels, speed=0.1, period=5, num_sparkles=None, step=1)
+                self.animation = RainbowSparkle(
+                    neopixels, speed=0.1, period=5, num_sparkles=None, step=1
+                )
             elif self.menu_items[index]["function"] == "sparkle_pulse":
-                self.animation = SparklePulse(neopixels, speed=0.1, color=(0,255,0), period=5, max_intensity=1, min_intensity=0)
+                self.animation = SparklePulse(
+                    neopixels,
+                    speed=0.1,
+                    color=(0, 255, 0),
+                    period=5,
+                    max_intensity=1,
+                    min_intensity=0,
+                )
         else:
             # All animations need to impliment animate() as their step function
             if self.animation and self.animation.animate:
@@ -808,6 +822,7 @@ class FlashyState(State):
         enc_buttons_event = enc_buttons.events.get()
         if enc_buttons_event and enc_buttons_event.pressed:
             machine.go_to_state("menu")
+
 
 class HIDState(State):
     keymap = [
@@ -890,6 +905,7 @@ class HIDState(State):
             neopixels.fill((255, 0, 0))
             neopixels.show()
             machine.go_to_state("menu")
+
 
 machine = StateMachine()
 machine.add_state(StartupState())
