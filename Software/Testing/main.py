@@ -5,8 +5,10 @@ from setup import (
     encoder_1,
     midi_serial,
     midi_usb,
+    highlight,
     total_lines,
     line_height,
+    shift,
     width,
     offset,
     keys,
@@ -285,7 +287,7 @@ def show_menu(menu):
 
     display_group = displayio.Group()
     # bring in the global variables
-    global line, highlight, shift, list_length
+    global line, highlight, shift, list_length, total_lines
 
     # menu variables
     item = 1
@@ -297,8 +299,10 @@ def show_menu(menu):
 
     # Shift the list of files so that it shows on the display
     list_length = len(menu)
-    short_list = menu[shift : shift + total_lines]
-
+    short_list = []
+    for index in range(shift, shift + total_lines):
+        short_list.append(menu[index]["pretty"])
+        print(short_list)
     for item in short_list:
         if highlight == line:
             white_rectangle = displayio.TileGrid(
@@ -487,6 +491,7 @@ class StartupState(State):
 
 
 class MenuState(State):
+
     menu_items = [
         {
             "name": "flashy",
@@ -519,8 +524,9 @@ class MenuState(State):
         return "menu"
 
     def enter(self, machine):
-        self.last_position = -4096
+        self.last_position = 0
         self.rainbow = Rainbow(neopixels, speed=0.1)
+        show_menu(self.menu_items)
         State.enter(self, machine)
 
     def exit(self, machine):
@@ -532,11 +538,10 @@ class MenuState(State):
         self.rainbow.animate()
         # Some code here to use an encoder to scroll through menu options, press to select one
         position = encoder_1.position
+        global highlight, shift, list_length, total_lines
 
-        if position != self.last_position:
-            index = position % len(
-                self.menu_items
-            )  # Generate a valid index from the position
+        if self.last_position != position:
+            '''
             # mode = self.menu_items[index]["name"]
             pretty_name = self.menu_items[index]["pretty"]
             text = str.format("{}: {}", index, pretty_name)
@@ -544,12 +549,27 @@ class MenuState(State):
                 terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
             )
             display.show(text_area)
-            self.last_position = position
+            '''
+            if position < self.last_position:
+                if highlight > 1:
+                    highlight -= 1
+                else:
+                    if shift > 0:
+                        shift -= 1
+                print("> " + str(self.menu_items[highlight - 1 + shift]["pretty"]))
+            else:
+                if highlight < total_lines:
+                    highlight += 1
+                else:
+                    if shift + total_lines < list_length:
+                        shift += 1
+                print("> " + str(self.menu_items[highlight - 1 + shift]["pretty"]))
+            show_menu(self.menu_items)
+        self.last_position = position
 
         enc_buttons_event = enc_buttons.events.get()
         if enc_buttons_event and enc_buttons_event.pressed:
-            index = position % len(self.menu_items)
-            machine.go_to_state(self.menu_items[index]["name"])
+            machine.go_to_state(self.menu_items[highlight - 1 + shift]["name"])
 
 
 class SequencerState(State):
