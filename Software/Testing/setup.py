@@ -1,22 +1,19 @@
+import adafruit_displayio_ssd1306
+import adafruit_midi
+import adafruit_sdcard
+import audiobusio
+import audiomixer
 import board
 import busio as io
 import digitalio
-import storage
-import adafruit_sdcard
-import time
-# import microcontroller
-# import audiocore
-import audiobusio
-import rotaryio
+import displayio
 import keypad
 import neopixel
-import adafruit_midi
-import usb_midi
-
-# Display imports
-import displayio
+import rotaryio
+import storage
 import terminalio
-import adafruit_displayio_ssd1306
+import time
+import usb_midi
 from adafruit_display_text import label
 
 # Setup I/O
@@ -106,4 +103,12 @@ except:
 
 # Setup audio
 audio = audiobusio.I2SOut(board.GP0, board.GP1, board.GP2)
-# volume
+num_voices = 9
+mixer = audiomixer.Mixer(
+    voice_count=num_voices,
+    sample_rate=16000,
+    channel_count=1,
+    bits_per_sample=16,
+    samples_signed=True,
+)
+clk_src = ""

@@ -1,121 +1,42 @@
-from setup import (
-    neopixels,
-    enc_buttons,
-    display,
-    encoder_1,
-    midi_serial,
-    midi_usb,
-    highlight,
-    total_lines,
-    line_height,
-    shift,
-    width,
-    offset,
-    keys,
-)
-from os import listdir
-import os
-import displayio
 import terminalio
-from adafruit_display_text import label
 import time
-from supervisor import ticks_ms
-import board
-import audiobusio
 import audiocore
-import audiomixer
 import usb_hid
-from adafruit_midi.note_on import NoteOn
-from adafruit_midi.note_off import NoteOff
-from adafruit_midi.control_change import ControlChange
+
+from adafruit_display_text import label
 from adafruit_led_animation.animation.rainbow import Rainbow
-from adafruit_led_animation.animation.rainbowchase import RainbowChase
-from adafruit_led_animation.animation.rainbowcomet import RainbowComet
-from adafruit_led_animation.animation.rainbowsparkle import RainbowSparkle
-from adafruit_led_animation.animation.sparklepulse import SparklePulse
 from adafruit_hid.consumer_control import ConsumerControl
 from adafruit_hid.consumer_control_code import ConsumerControlCode
 from adafruit_hid.keyboard import Keyboard
 from adafruit_hid.keycode import Keycode
+from os import listdir
+from supervisor import ticks_ms
 
+from State import State
+from FlashyState import FlashyState
 
-# Setup audio
-audio = audiobusio.I2SOut(board.GP0, board.GP1, board.GP2)
-num_voices = 9
-mixer = audiomixer.Mixer(
-    voice_count=num_voices,
-    sample_rate=16000,
-    channel_count=1,
-    bits_per_sample=16,
-    samples_signed=True,
+from menus import (
+    menu_select,
+    sequence_selector,
+    show_menu,
 )
-clk_src = ""
 
+from midi import (
+    send_note_off,
+    send_note_on,
+)
 
-# Function to scroll through a list of menu items and return a selection on encoder press
-def menu_select(last_position, menu_items):
-    # Force last_position to not equal encoder_1.position and be % = 0
-    last_position = -len(menu_items)
-    encoder_1.position = 0
-    item_selected = False
-    while item_selected is False:
-        current_position = encoder_1.position
-
-        # Generate a valid index from the position
-        if current_position != last_position:
-            index = current_position % len(menu_items)
-            # Display item
-            pretty_name = menu_items[index]["pretty"]
-            text = str.format("{}: {}", index, pretty_name)
-            text_area = label.Label(
-                terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
-            )
-            display.show(text_area)
-            last_position = current_position
-
-        # Select item
-        enc_buttons_event = enc_buttons.events.get()
-        if enc_buttons_event and enc_buttons_event.pressed:
-            index = current_position % len(menu_items)
-            return menu_items[index]["name"]
-
-
-# Function to program sequence values, should be used after a keypress
-# On key release toggle state
-# On key held and encoder turned, value changed
-def sequence_selector(value, min_val, max_val, increment, key_val):
-    selection = True
-    vel_change = False
-    encoder_pos = encoder_1.position
-    # Display current value
-    while selection:
-        text = f"Step {key_val}: {value[key_val][1]:.2f}"
-        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=5)
-        display.show(text_area)
-        key_event = keys.events.get()
-
-        # Modify value on encoder input
-        if encoder_pos is not encoder_1.position:
-            if encoder_1.position < encoder_pos:
-                if value[key_val][1] > min_val + increment:
-                    value[key_val][1] = value[key_val][1] - increment
-                else:
-                    value[key_val][1] = min_val
-
-            else:
-                if value[key_val][1] < max_val - increment:
-                    value[key_val][1] = value[key_val][1] + increment
-                else:
-                    value[key_val][1] = max_val
-            encoder_pos = encoder_1.position
-            vel_change = True
-
-        # Exit selection menu if key released
-        if key_event and key_event.released:
-            if key_event.key_number == key_val:
-                if not vel_change:
-                    value[key_val][0] = not value[key_val][0]
-                selection = False
+from setup import (
+    audio,
+    clk_src,
+    display,
+    enc_buttons,
+    encoder_1,
+    keys,
+    mixer,
+    neopixels,
+    total_lines,
+)
 
 
 # File sequencer class
@@ -243,133 +164,11 @@ class run_sequencer:
             self.step = 0
 
     def play_sequence(self):
-
         # Main sequencer loop
         # Calculate step duration
         self.step_length = int(1000 // (self.bpm / 60))
         self.play_step()
         self.step_update()
-
-
-# MIDI Functions
-def send_note_on(note, octv):
-    note = (note) + (12 * octv)
-    midi_serial.send(NoteOn(note, 120))
-    midi_usb.send(NoteOn(note, 120))
-
-
-def send_note_off(note, octv):
-    note = (note) + (12 * octv)
-    midi_serial.send(NoteOff(note, 0))
-    midi_usb.send(NoteOff(note, 120))
-
-
-def send_cc(number, val):
-    midi_serial.send(ControlChange(number, val))
-    midi_usb.send(ControlChange(number, val))
-
-
-# Menu Functions
-def get_files():
-    """Get a list of Python files in the root folder of the Pico"""
-
-    files = listdir()
-    menu = []
-    for file in files:
-        if file.endswith(".wav"):
-            menu.append(file)
-
-    return menu
-
-
-def show_menu(menu):
-    """Shows the menu on the screen"""
-
-    display_group = displayio.Group()
-    # bring in the global variables
-    global line, highlight, shift, list_length, total_lines
-
-    # menu variables
-    item = 1
-    line = 1
-
-    color_bitmap = displayio.Bitmap(width, line_height, 1)
-    color_palette = displayio.Palette(1)
-    color_palette[0] = 0xFFFFFF  # White
-
-    # Shift the list of files so that it shows on the display
-    list_length = len(menu)
-    short_list = []
-    for index in range(shift, shift + total_lines):
-        short_list.append(menu[index]["pretty"])
-        print(short_list)
-    for item in short_list:
-        if highlight == line:
-            white_rectangle = displayio.TileGrid(
-                color_bitmap,
-                pixel_shader=color_palette,
-                x=0,
-                y=((line - 1) * line_height),
-            )
-            display_group.append(white_rectangle)
-            text_arrow = ">"
-            text_arrow = label.Label(
-                terminalio.FONT,
-                text=text_arrow,
-                color=0x000000,
-                x=0,
-                y=((line - 1) * line_height) + offset,
-            )
-            display_group.append(text_arrow)
-            text_item = label.Label(
-                terminalio.FONT,
-                text=item,
-                color=0x000000,
-                x=10,
-                y=((line - 1) * line_height) + offset,
-            )
-            display_group.append(text_item)
-        else:
-            text_item = label.Label(
-                terminalio.FONT,
-                text=item,
-                color=0xFFFFFF,
-                x=10,
-                y=((line - 1) * line_height) + offset,
-            )
-            display_group.append(text_item)
-        line += 1
-    display.show(display_group)
-
-
-def launch(filename):
-    """Launch the Python script <filename>"""
-    global file_list
-    time.sleep(3)
-    exec(open(filename).read())
-    show_menu(file_list)
-
-
-class State(object):
-    def __init__(self):
-        pass
-
-    @property
-    def name(self):
-        return ""
-
-    def enter(self, machine):
-        pass
-
-    def exit(self, machine):
-        pass
-
-    def update(self, machine):
-        # if switch.fell:
-        #    machine.paused_state = machine.state.name
-        #    machine.pause()
-        #    return False
-        return True
 
 
 class StateMachine(object):
@@ -404,36 +203,6 @@ class StateMachine(object):
         self.state = self.states[state_name]
 
 
-"""
-class PausedState(State):
-
-    def __init__(self):
-        self.switch_pressed_at = 0
-
-    @property
-    def name(self):
-        return 'paused'
-
-    def enter(self, machine):
-        State.enter(self, machine)
-        #self.switch_pressed_at = time.monotonic()
-        if audio.playing:
-            audio.pause()
-
-    def exit(self, machine):
-        State.exit(self, machine)
-
-    def update(self, machine):
-        if switch.fell:
-            if audio.paused:
-                audio.resume()
-            machine.resume_state(machine.paused_state)
-        elif not switch.value:
-            if time.monotonic() - self.switch_pressed_at > 1.0:
-                machine.go_to_state('raising')
-"""
-
-
 class StartupState(State):
     color = (0, 0, 0)
     timer = 0
@@ -445,10 +214,12 @@ class StartupState(State):
 
     def enter(self, machine):
         neopixels.fill((0, 0, 0))
+        neopixels.show()
         State.enter(self, machine)
 
     def exit(self, machine):
         neopixels.fill((255, 0, 0))
+        neopixels.show()
         self.color = (0, 0, 0)
         self.timer = 0
         self.stage = 0
@@ -491,7 +262,6 @@ class StartupState(State):
 
 
 class MenuState(State):
-
     menu_items = [
         {
             "name": "flashy",
@@ -523,10 +293,16 @@ class MenuState(State):
     def name(self):
         return "menu"
 
-    def enter(self, machine):
+    def __init__(self):
         self.last_position = 0
+        self.highlight = 0  # The line number selected (currently 1 indexed)
+        self.shift = 0  # The index of the menu item at the top of the screen
         self.rainbow = Rainbow(neopixels, speed=0.1)
-        show_menu(self.menu_items)
+        self.list_length = len(self.menu_items)
+
+    def enter(self, machine):
+        encoder_1.position = self.last_position
+        show_menu(self.menu_items, self.highlight, self.shift)
         State.enter(self, machine)
 
     def exit(self, machine):
@@ -538,10 +314,9 @@ class MenuState(State):
         self.rainbow.animate()
         # Some code here to use an encoder to scroll through menu options, press to select one
         position = encoder_1.position
-        global highlight, shift, list_length, total_lines
 
         if self.last_position != position:
-            '''
+            """
             # mode = self.menu_items[index]["name"]
             pretty_name = self.menu_items[index]["pretty"]
             text = str.format("{}: {}", index, pretty_name)
@@ -549,27 +324,25 @@ class MenuState(State):
                 terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
             )
             display.show(text_area)
-            '''
-            if position < self.last_position:
-                if highlight > 1:
-                    highlight -= 1
+            """
+            if position < self.last_position:  # encoded decreased
+                if self.highlight > 0:
+                    self.highlight -= 1
                 else:
-                    if shift > 0:
-                        shift -= 1
-                print("> " + str(self.menu_items[highlight - 1 + shift]["pretty"]))
-            else:
-                if highlight < total_lines:
-                    highlight += 1
+                    if self.shift > 0:
+                        self.shift -= 1
+            else:  # encoded increased
+                if (self.highlight + 1) < total_lines:
+                    self.highlight += 1
                 else:
-                    if shift + total_lines < list_length:
-                        shift += 1
-                print("> " + str(self.menu_items[highlight - 1 + shift]["pretty"]))
-            show_menu(self.menu_items)
+                    if (self.shift + total_lines) < self.list_length:
+                        self.shift += 1
+            show_menu(self.menu_items, self.highlight, self.shift)
         self.last_position = position
 
         enc_buttons_event = enc_buttons.events.get()
         if enc_buttons_event and enc_buttons_event.pressed:
-            machine.go_to_state(self.menu_items[highlight - 1 + shift]["name"])
+            machine.go_to_state(self.menu_items[self.highlight + self.shift]["name"])
 
 
 class SequencerState(State):
@@ -662,7 +435,6 @@ class SamplerState(State):
         return selection
 
     def update(self, machine):
-
         # Show selection menu
         selection = menu_select(machine.last_enc1_pos, self.seq_menu_items)
         if selection == "add_sequence":
@@ -703,25 +475,21 @@ class SamplerState(State):
             if len(sequencer.active_sequences) == 0:
                 text = "No Active Sequences"
                 text_area = label.Label(
-                terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
+                    terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
                 )
                 display.show(text_area)
                 time.sleep(1)
             else:
-                remove_seq = self.select_sequence(
-                    sequencer.active_sequences
-                )
+                remove_seq = self.select_sequence(sequencer.active_sequences)
                 print(remove_seq)
                 del sequencer.active_sequences[remove_seq]
-                    
-         
-        if selection == "edit_sequence":
 
+        if selection == "edit_sequence":
             # Check if sequences exist
             if len(sequencer.active_sequences) == 0:
                 text = "No Active Sequences"
                 text_area = label.Label(
-                terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
+                    terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
                 )
                 display.show(text_area)
                 time.sleep(1)
@@ -745,7 +513,6 @@ class SamplerState(State):
                 neopixels.show()
                 machine.last_enc1_pos = encoder_1.position
                 while editing_sequence is True:
-
                     # Code to edit a sequence here
                     key_event = keys.events.get()
                     if key_event and key_event.pressed:
@@ -787,7 +554,6 @@ class SamplerPlay(State):
 
         # Loop through active sequences and load wav files
         for item in sequencer.active_sequences:
-
             # Load wav files to play
             sequencer.wav_files.append(open(item.fname, "rb"))
             sequencer.loaded_wavs.append(audiocore.WaveFile(sequencer.wav_files[-1]))
@@ -836,88 +602,6 @@ class MIDIState(State):
                 neopixels[key] = (255, 0, 0)
 
         neopixels.show()
-        enc_buttons_event = enc_buttons.events.get()
-        if enc_buttons_event and enc_buttons_event.pressed:
-            machine.go_to_state("menu")
-
-
-class FlashyState(State):
-    animation = False
-
-    menu_items = [
-        {
-            "function": "rainbow",
-            "pretty": "Rainbow",
-        },
-        {
-            "function": "rainbow_chase",
-            "pretty": "Rainbow Chase",
-        },
-        {
-            "function": "rainbow_comet",
-            "pretty": "Rainbow Comet",
-        },
-        {
-            "function": "rainbow_sparkle",
-            "pretty": "Rainbow Sparkle",
-        },
-        {
-            "function": "sparkle_pulse",
-            "pretty": "Sparkle Pulse",
-        },
-    ]
-
-    @property
-    def name(self):
-        return "flashy"
-
-    def enter(self, machine):
-        self.last_position = -4096
-        State.enter(self, machine)
-
-    def exit(self, machine):
-        neopixels.fill((255, 0, 0))
-        neopixels.show()
-        encoder_1.position = 0
-        State.exit(self, machine)
-
-    def update(self, machine):
-        position = encoder_1.position
-        if position != self.last_position:
-            index = position % len(
-                self.menu_items
-            )  # Generate a valid index from the position
-            pretty_name = self.menu_items[index]["pretty"]
-            text = str.format("{}: {}", index, pretty_name)
-            text_area = label.Label(
-                terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
-            )
-            display.show(text_area)
-            self.last_position = position
-            if self.menu_items[index]["function"] == "rainbow":
-                self.animation = Rainbow(neopixels, speed=0.1)
-            elif self.menu_items[index]["function"] == "rainbow_chase":
-                self.animation = RainbowChase(neopixels, speed=0.1)
-            elif self.menu_items[index]["function"] == "rainbow_comet":
-                self.animation = RainbowComet(neopixels, speed=0.1, tail_length=10)
-            elif self.menu_items[index]["function"] == "rainbow_sparkle":
-                self.animation = RainbowSparkle(
-                    neopixels, speed=0.1, period=5, num_sparkles=None, step=1
-                )
-            elif self.menu_items[index]["function"] == "sparkle_pulse":
-                self.animation = SparklePulse(
-                    neopixels,
-                    speed=0.1,
-                    color=(0, 255, 0),
-                    period=5,
-                    max_intensity=1,
-                    min_intensity=0,
-                )
-        else:
-            # All animations need to impliment animate() as their step function
-            if self.animation and self.animation.animate:
-                self.animation.animate()
-
         enc_buttons_event = enc_buttons.events.get()
         if enc_buttons_event and enc_buttons_event.pressed:
             machine.go_to_state("menu")
@@ -1017,7 +701,7 @@ machine.add_state(FlashyState())
 machine.add_state(HIDState())
 sequencer = run_sequencer()
 
-machine.go_to_state("startup")
+machine.go_to_state("menu")
 
 while True:
     machine.update()
