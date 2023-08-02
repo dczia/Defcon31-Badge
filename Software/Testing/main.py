@@ -5,12 +5,6 @@ from setup import (
     encoder_1,
     midi_serial,
     midi_usb,
-    highlight,
-    total_lines,
-    line_height,
-    shift,
-    width,
-    offset,
     keys,
 )
 from os import listdir
@@ -243,7 +237,6 @@ class run_sequencer:
             self.step = 0
 
     def play_sequence(self):
-
         # Main sequencer loop
         # Calculate step duration
         self.step_length = int(1000 // (self.bpm / 60))
@@ -269,31 +262,20 @@ def send_cc(number, val):
     midi_usb.send(ControlChange(number, val))
 
 
-# Menu Functions
-def get_files():
-    """Get a list of Python files in the root folder of the Pico"""
-
-    files = listdir()
-    menu = []
-    for file in files:
-        if file.endswith(".wav"):
-            menu.append(file)
-
-    return menu
-
-
-def show_menu(menu):
+def show_menu(menu, highlight, shift):
     """Shows the menu on the screen"""
 
     display_group = displayio.Group()
     # bring in the global variables
-    global line, highlight, shift, list_length, total_lines
 
     # menu variables
     item = 1
     line = 1
+    line_height = 10
+    offset = 5
+    total_lines = 3
 
-    color_bitmap = displayio.Bitmap(width, line_height, 1)
+    color_bitmap = displayio.Bitmap(display.width, line_height, 1)
     color_palette = displayio.Palette(1)
     color_palette[0] = 0xFFFFFF  # White
 
@@ -301,8 +283,10 @@ def show_menu(menu):
     list_length = len(menu)
     short_list = []
     for index in range(shift, shift + total_lines):
-        short_list.append(menu[index]["pretty"])
-        print(short_list)
+        try:
+            short_list.append(menu[index]["pretty"])
+        except IndexError:
+            print("show_menu: Bad Index")
     for item in short_list:
         if highlight == line:
             white_rectangle = displayio.TileGrid(
@@ -342,14 +326,6 @@ def show_menu(menu):
     display.show(display_group)
 
 
-def launch(filename):
-    """Launch the Python script <filename>"""
-    global file_list
-    time.sleep(3)
-    exec(open(filename).read())
-    show_menu(file_list)
-
-
 class State(object):
     def __init__(self):
         pass
@@ -378,6 +354,7 @@ class StateMachine(object):
         self.states = {}
         self.last_enc1_pos = encoder_1.position
         self.paused_state = None
+        self.ticks_ms = 0
 
     def add_state(self, state):
         self.states[state.name] = state
@@ -391,6 +368,8 @@ class StateMachine(object):
     def update(self):
         if self.state:
             self.state.update(self)
+            if self.ticks_ms > 0:
+                time.sleep(self.ticks_ms / 1000)
 
     # When pausing, don't exit the state
     def pause(self):
@@ -404,34 +383,21 @@ class StateMachine(object):
         self.state = self.states[state_name]
 
 
-"""
 class PausedState(State):
-
-    def __init__(self):
-        self.switch_pressed_at = 0
-
     @property
     def name(self):
-        return 'paused'
+        return "paused"
 
     def enter(self, machine):
         State.enter(self, machine)
-        #self.switch_pressed_at = time.monotonic()
-        if audio.playing:
-            audio.pause()
 
     def exit(self, machine):
         State.exit(self, machine)
 
     def update(self, machine):
-        if switch.fell:
-            if audio.paused:
-                audio.resume()
+        enc_buttons_event = enc_buttons.events.get()
+        if enc_buttons_event and enc_buttons_event.pressed:
             machine.resume_state(machine.paused_state)
-        elif not switch.value:
-            if time.monotonic() - self.switch_pressed_at > 1.0:
-                machine.go_to_state('raising')
-"""
 
 
 class StartupState(State):
@@ -491,7 +457,6 @@ class StartupState(State):
 
 
 class MenuState(State):
-
     menu_items = [
         {
             "name": "flashy",
@@ -523,10 +488,16 @@ class MenuState(State):
     def name(self):
         return "menu"
 
+    def __init__(self):
+        self.total_lines = 3
+        self.list_length = len(self.menu_items)
+        self.highlight = 0
+        self.shift = 0
+
     def enter(self, machine):
         self.last_position = 0
         self.rainbow = Rainbow(neopixels, speed=0.1)
-        show_menu(self.menu_items)
+        show_menu(self.menu_items, self.highlight, self.shift)
         State.enter(self, machine)
 
     def exit(self, machine):
@@ -538,38 +509,29 @@ class MenuState(State):
         self.rainbow.animate()
         # Some code here to use an encoder to scroll through menu options, press to select one
         position = encoder_1.position
-        global highlight, shift, list_length, total_lines
+        list_length = len(self.menu_items)  # TODO: Doesn't change every frame
 
         if self.last_position != position:
-            '''
-            # mode = self.menu_items[index]["name"]
-            pretty_name = self.menu_items[index]["pretty"]
-            text = str.format("{}: {}", index, pretty_name)
-            text_area = label.Label(
-                terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
-            )
-            display.show(text_area)
-            '''
             if position < self.last_position:
-                if highlight > 1:
-                    highlight -= 1
+                if self.highlight > 1:
+                    self.highlight -= 1
                 else:
-                    if shift > 0:
-                        shift -= 1
-                print("> " + str(self.menu_items[highlight - 1 + shift]["pretty"]))
+                    if self.shift > 0:
+                        self.shift -= 1
             else:
-                if highlight < total_lines:
-                    highlight += 1
+                if self.highlight < self.total_lines:
+                    self.highlight += 1
                 else:
-                    if shift + total_lines < list_length:
-                        shift += 1
-                print("> " + str(self.menu_items[highlight - 1 + shift]["pretty"]))
-            show_menu(self.menu_items)
+                    if self.shift + self.total_lines < list_length:
+                        self.shift += 1
+            show_menu(self.menu_items, self.highlight, self.shift)
         self.last_position = position
 
         enc_buttons_event = enc_buttons.events.get()
         if enc_buttons_event and enc_buttons_event.pressed:
-            machine.go_to_state(self.menu_items[highlight - 1 + shift]["name"])
+            machine.go_to_state(
+                self.menu_items[self.highlight - 1 + self.shift]["name"]
+            )
 
 
 class SequencerState(State):
@@ -662,7 +624,6 @@ class SamplerState(State):
         return selection
 
     def update(self, machine):
-
         # Show selection menu
         selection = menu_select(machine.last_enc1_pos, self.seq_menu_items)
         if selection == "add_sequence":
@@ -703,28 +664,24 @@ class SamplerState(State):
             if len(sequencer.active_sequences) == 0:
                 text = "No Active Sequences"
                 text_area = label.Label(
-                terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
+                    terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
                 )
                 display.show(text_area)
-                time.sleep(1)
+                time.sleep(0.5)
             else:
-                remove_seq = self.select_sequence(
-                    sequencer.active_sequences
-                )
+                remove_seq = self.select_sequence(sequencer.active_sequences)
                 print(remove_seq)
                 del sequencer.active_sequences[remove_seq]
-                    
-         
-        if selection == "edit_sequence":
 
+        if selection == "edit_sequence":
             # Check if sequences exist
             if len(sequencer.active_sequences) == 0:
                 text = "No Active Sequences"
                 text_area = label.Label(
-                terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
+                    terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
                 )
                 display.show(text_area)
-                time.sleep(1)
+                time.sleep(0.5)
             else:
                 editing_sequence = True
 
@@ -745,7 +702,6 @@ class SamplerState(State):
                 neopixels.show()
                 machine.last_enc1_pos = encoder_1.position
                 while editing_sequence is True:
-
                     # Code to edit a sequence here
                     key_event = keys.events.get()
                     if key_event and key_event.pressed:
@@ -787,7 +743,6 @@ class SamplerPlay(State):
 
         # Loop through active sequences and load wav files
         for item in sequencer.active_sequences:
-
             # Load wav files to play
             sequencer.wav_files.append(open(item.fname, "rb"))
             sequencer.loaded_wavs.append(audiocore.WaveFile(sequencer.wav_files[-1]))
@@ -958,7 +913,6 @@ class HIDState(State):
 
             self.kbd = fakekb()
             self.consumer_control = fakekb()
-            print("hello")
 
     def enter(self, machine):
         text = "HID Controller"
@@ -978,10 +932,8 @@ class HIDState(State):
         cur_position = encoder_1.position
         if cur_position != self.last_position:
             if cur_position > self.last_position:
-                print("Encoder increased")
                 self.consumer_control.send(ConsumerControlCode.VOLUME_INCREMENT)
             else:
-                print("Encoder decreased")
                 self.consumer_control.send(ConsumerControlCode.VOLUME_DECREMENT)
             self.last_position = cur_position
         #
@@ -990,11 +942,9 @@ class HIDState(State):
         key_event = keys.events.get()
         if key_event:
             if key_event.pressed:
-                print("Key pressed:", key_event.key_number)
                 self.kbd.press(self.keymap[key_event.key_number])
                 neopixels[key_event.key_number] = (255, 0, 0)
             if key_event.released:
-                print("Key released:", key_event.key_number)
                 self.kbd.release(self.keymap[key_event.key_number])
                 neopixels[key_event.key_number] = (100, 100, 100)
             neopixels.show()
@@ -1017,7 +967,7 @@ machine.add_state(FlashyState())
 machine.add_state(HIDState())
 sequencer = run_sequencer()
 
-machine.go_to_state("startup")
+machine.go_to_state("menu")
 
 while True:
     machine.update()

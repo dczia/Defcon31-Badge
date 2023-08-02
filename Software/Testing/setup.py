@@ -4,6 +4,7 @@ import digitalio
 import storage
 import adafruit_sdcard
 import time
+
 # import microcontroller
 # import audiocore
 import audiobusio
@@ -24,17 +25,9 @@ from adafruit_display_text import label
 # OLED Screen
 displayio.release_displays()
 i2c = io.I2C(board.GP15, board.GP14)
-width = 128
-height = 32
-line = 1
-line_height = 10
-offset = 5
-highlight = 1
-shift = 0
-list_length = 0
-total_lines = 3
+
 display_bus = displayio.I2CDisplay(i2c, device_address=0x3C)
-display = adafruit_displayio_ssd1306.SSD1306(display_bus, width=width, height=height)
+display = adafruit_displayio_ssd1306.SSD1306(display_bus, width=128, height=32)
 
 # Neopixels
 pixel_pin = board.GP28
