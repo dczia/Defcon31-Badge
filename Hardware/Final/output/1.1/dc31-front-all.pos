@@ -1,0 +1,26 @@
+### Footprint positions - created on Sat Jul 29 22:01:10 2023 ###
+### Printed by KiCad version 7.0.2
+## Unit = mm, Angle = deg.
+## Side : All
+# Ref     Val                              Package                                            PosX       PosY       Rot  Side
+C101      0.1uF                            C_0603_1608Metric                              -95.6665     6.4965    0.0000  bottom
+C102      0.1uF                            C_0603_1608Metric                              -56.2465    52.9915  180.0000  bottom
+C103      0.1uF                            C_0603_1608Metric                              -36.5865    81.4815  180.0000  bottom
+D101      WS2812B                          LED_SK6812_4020_                               -84.3031     8.6331  180.0000  bottom
+D102      WS2812B                          LED_SK6812_4020_                               -65.3031     8.6331  180.0000  bottom
+D103      WS2812B                          LED_SK6812_4020_                               -46.3031     8.6331  180.0000  bottom
+D104      WS2812B                          LED_SK6812_4020_                               -27.3031     8.6331  180.0000  bottom
+D105      WS2812B                          LED_SK6812_4020_                               -27.4799    52.9599    0.0000  bottom
+D106      WS2812B                          LED_SK6812_4020_                               -46.4799    52.9599    0.0000  bottom
+D107      WS2812B                          LED_SK6812_4020_                               -65.4799    52.9599    0.0000  bottom
+D108      WS2812B                          LED_SK6812_4020_                               -84.4799    52.9599    0.0000  bottom
+D109      WS2812B                          LED_SK6812_4020_                               -27.4699    78.9399    0.0000  bottom
+D110      WS2812B                          LED_SK6812_4020_                               -46.4599    78.9699    0.0000  bottom
+J101      FRONT                            PinSocket_1x05_P2.54mm_Vertical_SMD_Pin1Left  -100.4065    14.9415  180.0000  bottom
+R101      10R                              R_0603_1608Metric                              -92.6365     8.7715    0.0000  bottom
+HOLE1     MountingHole_1.6                 MountingHole_1.6                                 7.3465   125.3515    0.0000  top
+HOLE2     MountingHole_1.6                 MountingHole_1.6                               103.7465   125.3515    0.0000  top
+HOLE3     MountingHole_1.6                 MountingHole_1.6                                 7.3465     2.8515    0.0000  top
+HOLE4     MountingHole_1.6                 MountingHole_1.6                               103.7465     2.8615    0.0000  top
+X101      Badgelife_sao_connector_v169bis  Badgelife-Shitty-v1.69bis                      101.0965    56.2565    0.0000  top
+## End

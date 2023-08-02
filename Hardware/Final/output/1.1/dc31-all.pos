@@ -1,0 +1,53 @@
+### Footprint positions - created on Sun Jul 30 14:28:26 2023 ###
+### Printed by KiCad version 7.0.2
+## Unit = mm, Angle = deg.
+## Side : All
+# Ref     Val                Package                                                  PosX       PosY       Rot  Side
+C1        0.1uF              C_0603_1608Metric                                     92.8400    76.5750  180.0000  top
+C2        10uF               C_0805_2012Metric                                      2.6800    54.2300  -90.0000  top
+C3        3.3nF              C_0805_2012Metric                                      4.2700    59.5900    0.0000  top
+C4        0.1uF              C_0603_1608Metric                                     36.3850    89.4300    0.0000  top
+C5        0.1uF              C_0603_1608Metric                                     61.2500   105.9200   90.0000  top
+C6        0.1uF              C_0603_1608Metric                                     69.0850    75.7500  180.0000  top
+C7        22uF               C_0805_2012Metric                                      8.4700    52.2200  180.0000  top
+D1        D_Small_Filled     D_SOD-323                                             26.3675    41.9600  180.0000  top
+D2        D_Small_Filled     D_SOD-323                                             45.4175    41.9600  180.0000  top
+D3        D_Small_Filled     D_SOD-323                                             64.4675    41.9600  180.0000  top
+D4        D_Small_Filled     D_SOD-323                                             83.5175    41.9600  180.0000  top
+D5        D_Small_Filled     D_SOD-323                                             26.3675     1.4600  180.0000  top
+D6        D_Small_Filled     D_SOD-323                                             45.4175     1.4600  180.0000  top
+D7        D_Small_Filled     D_SOD-323                                             64.4675     1.4600  180.0000  top
+D8        D_Small_Filled     D_SOD-323                                             83.5175     1.4600  180.0000  top
+D9        D_Small_Filled     D_SOD-323                                             26.3700    67.8100  180.0000  top
+D10       D_Small_Filled     D_SOD-323                                             45.4400    67.8000  180.0000  top
+D11       D_Small_Filled     D_SOD-323                                             26.4675    89.8000  180.0000  top
+D12       D_Small_Filled     D_SOD-323                                             45.4000    89.7600  180.0000  top
+D13       D_Small_Filled     D_SOD-323                                             94.5200   105.3600    0.0000  top
+D14       D_Schottky         D_SOD-323                                             13.7000    49.9300  180.0000  top
+D15       D_Schottky         D_SOD-323                                             97.9200    37.1500  -90.0000  top
+D16       D_Small_Filled     D_SOD-323                                             86.8600   105.3600    0.0000  top
+HOLE1     MountingHole_1.6   MountingHole_1.6                                       4.0000     3.0100    0.0000  top
+HOLE2     MountingHole_1.6   MountingHole_1.6                                       4.0000   106.4900    0.0000  top
+HOLE3     MountingHole_1.6   MountingHole_1.6                                     105.6600   106.4800    0.0000  top
+HOLE4     MountingHole_1.6   MountingHole_1.6                                     105.6600     3.0000    0.0000  top
+J9        Micro_SD_Card_SPI  MicroSD-Socket-Seeed-320090008                        36.4200   104.9200  180.0000  top
+L1        2.2uH              L_Wuerth_MAPI-3015                                    12.6500    53.3600  -90.0000  top
+Q1        3904               SOT-23                                                85.6000    78.0500  -90.0000  top
+R1        1k                 R_0603_1608Metric                                    105.5050    75.7350  180.0000  top
+R2        220k               R_0603_1608Metric                                     98.8300    80.3600  180.0000  top
+R3        100k               R_0603_1608Metric                                     92.8500    78.3450    0.0000  top
+R4        1k                 R_0603_1608Metric                                     92.8400    74.7550  180.0000  top
+R5        100k               R_0603_1608Metric                                     98.8700   105.3600  180.0000  top
+R6        10k                R_0603_1608Metric                                     86.4500    74.8100    0.0000  top
+R7        1M                 R_0603_1608Metric                                     67.3400    91.7700    0.0000  top
+R8        10R                R_0603_1608Metric                                     80.4500    76.3200  -90.0000  top
+R9        33R                R_0603_1608Metric                                     69.0850    77.7900    0.0000  top
+R10       220R               R_0603_1608Metric                                     82.4900   105.3600    0.0000  top
+R11       100k               R_0603_1608Metric                                     12.1300    57.3500    0.0000  top
+SW14      SW_SPDT            SW_SPDT_CK-JS102011SAQN                              105.4150    33.5700   90.0000  top
+U2        OPA341UA           SOIC-8_3.9x4.9mm_P1.27mm                              98.8150    76.3850    0.0000  top
+U3        MAX98357A/B        TQFN-16-1EP_3x3mm_P0.5mm_EP1.23x1.23mm                66.7000    87.1700  180.0000  top
+U4        74HC04             TSSOP-14_4.4x5mm_P0.65mm                              75.0425    76.9700  180.0000  top
+U5        TLP2361            SO-5_4.4x3.6mm_P1.27mm                                67.4000   106.0200  180.0000  top
+U6        TPS62153           VQFN-16-1EP_3x3mm_P0.5mm_EP1.68x1.68mm_ThermalVias     6.4900    55.9025  180.0000  top
+## End
