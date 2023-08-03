@@ -489,7 +489,7 @@ class MenuState(State):
     def __init__(self):
         self.total_lines = 3
         self.list_length = len(self.menu_items)
-        self.highlight = 0
+        self.highlight = 1
         self.shift = 0
 
     def enter(self, machine):
@@ -592,10 +592,18 @@ class SamplerState(State):
     def name(self):
         return "sampler"
 
+    def __init__(self):
+        self.total_lines = 3
+        self.list_length = len(self.seq_menu_items)
+        self.highlight = 1
+        self.shift = 0
+
     def enter(self, machine):
-        text = "Sampler"
-        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-        display.show(text_area)
+        self.last_position = 0
+        # text = "Sampler"
+        # text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+        # display.show(text_area)
+        show_menu(self.seq_menu_items, self.highlight, self.shift)
         neopixels.fill((255, 0, 0))
         neopixels.show()
         State.enter(self, machine)
@@ -623,108 +631,130 @@ class SamplerState(State):
 
     def update(self, machine):
         # Show selection menu
-        selection = menu_select(machine.last_enc1_pos, self.seq_menu_items)
-        if selection == "add_sequence":
-            # Display select file
-            text = "Select File"
-            text_area = label.Label(
-                terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
-            )
-            display.show(text_area)
-            time.sleep(1)
-            # Select file
-            selected_file = self.select_wav()
-            sequencer.add_sequence(file_sequence())
+        # selection = menu_select(machine.last_enc1_pos, self.seq_menu_items)
+        position = encoder_1.position
+        list_length = len(self.seq_menu_items)  # TODO: Doesn't change every frame
 
-            # Create new sequence
-            sequencer.active_sequences[-1].fname = str(f"/samples/{selected_file}")
-            sequencer.active_sequences[-1].sequence = [
-                [False, 0.5],
-                [False, 0.5],
-                [False, 0.5],
-                [False, 0.5],
-                [False, 0.5],
-                [False, 0.5],
-                [False, 0.5],
-                [False, 0.5],
-            ]
-            # Display select file
-            text = "Sequence Created"
-            text_area = label.Label(
-                terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
-            )
-            display.show(text_area)
-            time.sleep(1)
-            enc_buttons_event = enc_buttons.events.get()
-            if enc_buttons_event and enc_buttons_event.pressed:
-                pass
-        if selection == "remove_sequence":
-            if len(sequencer.active_sequences) == 0:
-                text = "No Active Sequences"
-                text_area = label.Label(
-                    terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
-                )
-                display.show(text_area)
-                time.sleep(0.5)
+        if self.last_position != position:
+            if position < self.last_position:
+                if self.highlight > 1:
+                    self.highlight -= 1
+                else:
+                    if self.shift > 0:
+                        self.shift -= 1
             else:
-                remove_seq = self.select_sequence(sequencer.active_sequences)
-                print(remove_seq)
-                del sequencer.active_sequences[remove_seq]
+                if self.highlight < self.total_lines:
+                    self.highlight += 1
+                else:
+                    if self.shift + self.total_lines < list_length:
+                        self.shift += 1
+            show_menu(self.seq_menu_items, self.highlight, self.shift)
+        self.last_position = position
 
-        if selection == "edit_sequence":
-            # Check if sequences exist
-            if len(sequencer.active_sequences) == 0:
-                text = "No Active Sequences"
+        enc_buttons_event = enc_buttons.events.get()
+        if enc_buttons_event and enc_buttons_event.pressed:
+            selection = self.seq_menu_items[self.highlight - 1 + self.shift]["name"]
+            if selection == "add_sequence":
+                # Display select file
+                text = "Select File"
                 text_area = label.Label(
                     terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
                 )
                 display.show(text_area)
-                time.sleep(0.5)
-            else:
-                editing_sequence = True
+                time.sleep(1)
+                # Select file
+                selected_file = self.select_wav()
+                sequencer.add_sequence(file_sequence())
 
-                # Select sequence
-                selected_sequence = self.select_sequence(
-                    sequencer.active_sequences
-                )  # Modify to index based on selected
-                sequencer.active_sequences[selected_sequence].show_sequence()
-
-                # Display
-                text = f"Edit {sequencer.active_sequences[selected_sequence].fname}"
+                # Create new sequence
+                sequencer.active_sequences[-1].fname = str(f"/samples/{selected_file}")
+                sequencer.active_sequences[-1].sequence = [
+                    [False, 0.5],
+                    [False, 0.5],
+                    [False, 0.5],
+                    [False, 0.5],
+                    [False, 0.5],
+                    [False, 0.5],
+                    [False, 0.5],
+                    [False, 0.5],
+                ]
+                # Display select file
+                text = "Sequence Created"
                 text_area = label.Label(
                     terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
                 )
                 display.show(text_area)
+                time.sleep(1)
+                enc_buttons_event = enc_buttons.events.get()
+                if enc_buttons_event and enc_buttons_event.pressed:
+                    pass
+            if selection == "remove_sequence":
+                if len(sequencer.active_sequences) == 0:
+                    text = "No Active Sequences"
+                    text_area = label.Label(
+                        terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
+                    )
+                    display.show(text_area)
+                    time.sleep(0.5)
+                else:
+                    remove_seq = self.select_sequence(sequencer.active_sequences)
+                    print(remove_seq)
+                    del sequencer.active_sequences[remove_seq]
 
-                sequencer.active_sequences[selected_sequence].show_sequence()
-                neopixels.show()
-                machine.last_enc1_pos = encoder_1.position
-                while editing_sequence is True:
-                    # Code to edit a sequence here
-                    key_event = keys.events.get()
-                    if key_event and key_event.pressed:
-                        key = key_event.key_number
-                        sequence_selector(
-                            sequencer.active_sequences[selected_sequence].sequence,
-                            0,
-                            1,
-                            0.05,
-                            key,
-                        )
-                        sequencer.active_sequences[selected_sequence].show_sequence()
-                        neopixels.show()
-                    # Update to play/pause button for final hardware
-                    enc_buttons_event = enc_buttons.events.get()
-                    if enc_buttons_event and enc_buttons_event.pressed:
-                        editing_sequence = False
-                    # Press encoder to exit
-                    # Press play to start
+            if selection == "edit_sequence":
+                # Check if sequences exist
+                if len(sequencer.active_sequences) == 0:
+                    text = "No Active Sequences"
+                    text_area = label.Label(
+                        terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
+                    )
+                    display.show(text_area)
+                    time.sleep(0.5)
+                else:
+                    editing_sequence = True
 
-        if selection == "play_sequence":
-            machine.go_to_state("sampler_play")
+                    # Select sequence
+                    selected_sequence = self.select_sequence(
+                        sequencer.active_sequences
+                    )  # Modify to index based on selected
+                    sequencer.active_sequences[selected_sequence].show_sequence()
 
-        if selection == "exit":
-            machine.go_to_state("menu")
+                    # Display
+                    text = f"Edit {sequencer.active_sequences[selected_sequence].fname}"
+                    text_area = label.Label(
+                        terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
+                    )
+                    display.show(text_area)
+
+                    sequencer.active_sequences[selected_sequence].show_sequence()
+                    neopixels.show()
+                    machine.last_enc1_pos = encoder_1.position
+                    while editing_sequence is True:
+                        # Code to edit a sequence here
+                        key_event = keys.events.get()
+                        if key_event and key_event.pressed:
+                            key = key_event.key_number
+                            sequence_selector(
+                                sequencer.active_sequences[selected_sequence].sequence,
+                                0,
+                                1,
+                                0.05,
+                                key,
+                            )
+                            sequencer.active_sequences[selected_sequence].show_sequence()
+                            neopixels.show()
+                        # Update to play/pause button for final hardware
+                        enc_buttons_event = enc_buttons.events.get()
+                        if enc_buttons_event and enc_buttons_event.pressed:
+                            editing_sequence = False
+                        # Press encoder to exit
+                        # Press play to start
+
+            if selection == "play_sequence":
+                machine.go_to_state("sampler_play")
+
+            if selection == "exit":
+                machine.go_to_state("menu")
 
 
 class SamplerPlay(State):
@@ -795,7 +825,6 @@ class MIDIState(State):
 
 
 class FlashyState(State):
-    animation = False
 
     menu_items = [
         {
@@ -818,14 +847,26 @@ class FlashyState(State):
             "function": "sparkle_pulse",
             "pretty": "Sparkle Pulse",
         },
+        {
+            "function": "exit",
+            "pretty" : "Exit"
+        }
     ]
 
     @property
     def name(self):
         return "flashy"
 
+    def __init__(self):
+        self.total_lines = 3
+        self.list_length = len(self.menu_items)
+        self.highlight = 1
+        self.shift = 0
+        self.animation = Rainbow(neopixels, speed=0.1)
+
     def enter(self, machine):
-        self.last_position = -4096
+        self.last_position = 0
+        show_menu(self.menu_items, self.highlight, self.shift)
         State.enter(self, machine)
 
     def exit(self, machine):
@@ -836,28 +877,33 @@ class FlashyState(State):
 
     def update(self, machine):
         position = encoder_1.position
-        if position != self.last_position:
-            index = position % len(
-                self.menu_items
-            )  # Generate a valid index from the position
-            pretty_name = self.menu_items[index]["pretty"]
-            text = str.format("{}: {}", index, pretty_name)
-            text_area = label.Label(
-                terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
-            )
-            display.show(text_area)
-            self.last_position = position
-            if self.menu_items[index]["function"] == "rainbow":
+        list_length = len(self.menu_items)  # TODO: Doesn't change every frame
+
+        if self.last_position != position:
+            if position < self.last_position:
+                if self.highlight > 1:
+                    self.highlight -= 1
+                else:
+                    if self.shift > 0:
+                        self.shift -= 1
+            else:
+                if self.highlight < self.total_lines:
+                    self.highlight += 1
+                else:
+                    if self.shift + self.total_lines < list_length:
+                        self.shift += 1
+            show_menu(self.menu_items, self.highlight, self.shift)
+            if self.menu_items[self.highlight - 1 + self.shift]["function"] == "rainbow":
                 self.animation = Rainbow(neopixels, speed=0.1)
-            elif self.menu_items[index]["function"] == "rainbow_chase":
+            elif self.menu_items[self.highlight - 1 + self.shift]["function"] == "rainbow_chase":
                 self.animation = RainbowChase(neopixels, speed=0.1)
-            elif self.menu_items[index]["function"] == "rainbow_comet":
+            elif self.menu_items[self.highlight - 1 + self.shift]["function"] == "rainbow_comet":
                 self.animation = RainbowComet(neopixels, speed=0.1, tail_length=10)
-            elif self.menu_items[index]["function"] == "rainbow_sparkle":
+            elif self.menu_items[self.highlight - 1 + self.shift]["function"] == "rainbow_sparkle":
                 self.animation = RainbowSparkle(
                     neopixels, speed=0.1, period=5, num_sparkles=None, step=1
                 )
-            elif self.menu_items[index]["function"] == "sparkle_pulse":
+            elif self.menu_items[self.highlight - 1 + self.shift]["function"] == "sparkle_pulse":
                 self.animation = SparklePulse(
                     neopixels,
                     speed=0.1,
@@ -866,14 +912,31 @@ class FlashyState(State):
                     max_intensity=1,
                     min_intensity=0,
                 )
-        else:
-            # All animations need to impliment animate() as their step function
-            if self.animation and self.animation.animate:
-                self.animation.animate()
-
+        self.animation.animate()
+        self.last_position = position
         enc_buttons_event = enc_buttons.events.get()
         if enc_buttons_event and enc_buttons_event.pressed:
-            machine.go_to_state("menu")
+            if self.menu_items[self.highlight - 1 + self.shift]["function"] == "rainbow":
+                self.animation = Rainbow(neopixels, speed=0.1)
+            elif self.menu_items[self.highlight - 1 + self.shift]["function"] == "rainbow_chase":
+                self.animation = RainbowChase(neopixels, speed=0.1)
+            elif self.menu_items[self.highlight - 1 + self.shift]["function"] == "rainbow_comet":
+                self.animation = RainbowComet(neopixels, speed=0.1, tail_length=10)
+            elif self.menu_items[self.highlight - 1 + self.shift]["function"] == "rainbow_sparkle":
+                self.animation = RainbowSparkle(
+                    neopixels, speed=0.1, period=5, num_sparkles=None, step=1
+                )
+            elif self.menu_items[self.highlight - 1 + self.shift]["function"] == "sparkle_pulse":
+                self.animation = SparklePulse(
+                    neopixels,
+                    speed=0.1,
+                    color=(0, 255, 0),
+                    period=5,
+                    max_intensity=1,
+                    min_intensity=0,
+                )
+            elif self.menu_items[self.highlight - 1 + self.shift]["function"] == "exit":
+                machine.go_to_state("menu")
 
 
 class HIDState(State):
@@ -964,7 +1027,7 @@ machine.add_state(FlashyState())
 machine.add_state(HIDState())
 sequencer = run_sequencer()
 
-machine.go_to_state("menu")
+machine.go_to_state("startup")
 
 while True:
     machine.update()
