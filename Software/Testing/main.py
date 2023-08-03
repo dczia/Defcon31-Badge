@@ -8,7 +8,6 @@ from setup import (
     keys,
 )
 from os import listdir
-import os
 import displayio
 import terminalio
 from adafruit_display_text import label
@@ -280,7 +279,6 @@ def show_menu(menu, highlight, shift):
     color_palette[0] = 0xFFFFFF  # White
 
     # Shift the list of files so that it shows on the display
-    list_length = len(menu)
     short_list = []
     for index in range(shift, shift + total_lines):
         try:
@@ -880,7 +878,6 @@ class FlashyState(State):
 
 class HIDState(State):
     keymap = [
-        Keycode.KEYPAD_ZERO,
         Keycode.KEYPAD_ONE,
         Keycode.KEYPAD_TWO,
         Keycode.KEYPAD_THREE,
@@ -940,15 +937,15 @@ class HIDState(State):
         # Handle keyswitches
         #
         key_event = keys.events.get()
-        if key_event:
+        while key_event:
             if key_event.pressed:
                 self.kbd.press(self.keymap[key_event.key_number])
                 neopixels[key_event.key_number] = (255, 0, 0)
             if key_event.released:
                 self.kbd.release(self.keymap[key_event.key_number])
                 neopixels[key_event.key_number] = (100, 100, 100)
-            neopixels.show()
-
+            key_event = keys.events.get()
+        neopixels.show()
         enc_buttons_event = enc_buttons.events.get()
         if enc_buttons_event and enc_buttons_event.pressed:
             neopixels.fill((255, 0, 0))
