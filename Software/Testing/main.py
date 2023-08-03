@@ -446,6 +446,10 @@ class StartupState(State):
             else:
                 time.sleep(0.1)
                 machine.go_to_state("menu")
+        # Skip to menu if encoder is pressed
+        enc_buttons_event = enc_buttons.events.get()
+        if enc_buttons_event and enc_buttons_event.pressed:
+            machine.go_to_state("menu")
 
 
 class MenuState(State):
