@@ -741,7 +741,9 @@ class SamplerState(State):
                                 0.05,
                                 key,
                             )
-                            sequencer.active_sequences[selected_sequence].show_sequence()
+                            sequencer.active_sequences[
+                                selected_sequence
+                            ].show_sequence()
                             neopixels.show()
                         # Update to play/pause button for final hardware
                         enc_buttons_event = enc_buttons.events.get()
@@ -825,7 +827,6 @@ class MIDIState(State):
 
 
 class FlashyState(State):
-
     menu_items = [
         {
             "function": "rainbow",
@@ -847,10 +848,7 @@ class FlashyState(State):
             "function": "sparkle_pulse",
             "pretty": "Sparkle Pulse",
         },
-        {
-            "function": "exit",
-            "pretty" : "Exit"
-        }
+        {"function": "exit", "pretty": "Exit"},
     ]
 
     @property
@@ -893,17 +891,32 @@ class FlashyState(State):
                     if self.shift + self.total_lines < list_length:
                         self.shift += 1
             show_menu(self.menu_items, self.highlight, self.shift)
-            if self.menu_items[self.highlight - 1 + self.shift]["function"] == "rainbow":
+            if (
+                self.menu_items[self.highlight - 1 + self.shift]["function"]
+                == "rainbow"
+            ):
                 self.animation = Rainbow(neopixels, speed=0.1)
-            elif self.menu_items[self.highlight - 1 + self.shift]["function"] == "rainbow_chase":
+            elif (
+                self.menu_items[self.highlight - 1 + self.shift]["function"]
+                == "rainbow_chase"
+            ):
                 self.animation = RainbowChase(neopixels, speed=0.1)
-            elif self.menu_items[self.highlight - 1 + self.shift]["function"] == "rainbow_comet":
+            elif (
+                self.menu_items[self.highlight - 1 + self.shift]["function"]
+                == "rainbow_comet"
+            ):
                 self.animation = RainbowComet(neopixels, speed=0.1, tail_length=10)
-            elif self.menu_items[self.highlight - 1 + self.shift]["function"] == "rainbow_sparkle":
+            elif (
+                self.menu_items[self.highlight - 1 + self.shift]["function"]
+                == "rainbow_sparkle"
+            ):
                 self.animation = RainbowSparkle(
                     neopixels, speed=0.1, period=5, num_sparkles=None, step=1
                 )
-            elif self.menu_items[self.highlight - 1 + self.shift]["function"] == "sparkle_pulse":
+            elif (
+                self.menu_items[self.highlight - 1 + self.shift]["function"]
+                == "sparkle_pulse"
+            ):
                 self.animation = SparklePulse(
                     neopixels,
                     speed=0.1,
@@ -916,17 +929,32 @@ class FlashyState(State):
         self.last_position = position
         enc_buttons_event = enc_buttons.events.get()
         if enc_buttons_event and enc_buttons_event.pressed:
-            if self.menu_items[self.highlight - 1 + self.shift]["function"] == "rainbow":
+            if (
+                self.menu_items[self.highlight - 1 + self.shift]["function"]
+                == "rainbow"
+            ):
                 self.animation = Rainbow(neopixels, speed=0.1)
-            elif self.menu_items[self.highlight - 1 + self.shift]["function"] == "rainbow_chase":
+            elif (
+                self.menu_items[self.highlight - 1 + self.shift]["function"]
+                == "rainbow_chase"
+            ):
                 self.animation = RainbowChase(neopixels, speed=0.1)
-            elif self.menu_items[self.highlight - 1 + self.shift]["function"] == "rainbow_comet":
+            elif (
+                self.menu_items[self.highlight - 1 + self.shift]["function"]
+                == "rainbow_comet"
+            ):
                 self.animation = RainbowComet(neopixels, speed=0.1, tail_length=10)
-            elif self.menu_items[self.highlight - 1 + self.shift]["function"] == "rainbow_sparkle":
+            elif (
+                self.menu_items[self.highlight - 1 + self.shift]["function"]
+                == "rainbow_sparkle"
+            ):
                 self.animation = RainbowSparkle(
                     neopixels, speed=0.1, period=5, num_sparkles=None, step=1
                 )
-            elif self.menu_items[self.highlight - 1 + self.shift]["function"] == "sparkle_pulse":
+            elif (
+                self.menu_items[self.highlight - 1 + self.shift]["function"]
+                == "sparkle_pulse"
+            ):
                 self.animation = SparklePulse(
                     neopixels,
                     speed=0.1,
