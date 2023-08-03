@@ -769,7 +769,7 @@ class MIDIState(State):
         text = "MIDI Controller"
         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
         display.show(text_area)
-        neopixels.fill((255, 0, 0))
+        neopixels.fill((100, 100, 100))
         neopixels.show()
         State.enter(self, machine)
 
@@ -778,15 +778,16 @@ class MIDIState(State):
 
     def update(self, machine):
         key_event = keys.events.get()
-        if key_event:
+        while key_event:
             if key_event.pressed:
                 key = key_event.key_number
                 send_note_on(key, 4)
-                neopixels[key] = (0, 0, 255)
+                neopixels[key] = (255, 0, 0)
             if key_event.released:
                 key = key_event.key_number
                 send_note_off(key, 4)
-                neopixels[key] = (255, 0, 0)
+                neopixels[key] = (100, 100, 100)
+            key_event = keys.events.get()
 
         neopixels.show()
         enc_buttons_event = enc_buttons.events.get()
