@@ -60,9 +60,7 @@ def menu_select(last_position, menu_items):
             # Display item
             pretty_name = menu_items[index]["pretty"]
             text = str.format("{}: {}", index, pretty_name)
-            text_area = label.Label(
-                terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
-            )
+            text_area = label.Label(terminalio.FONT, text=text, x=2, y=15)
             display.show(text_area)
             last_position = current_position
 
@@ -83,7 +81,7 @@ def sequence_selector(value, min_val, max_val, increment, key_val):
     # Display current value
     while selection:
         text = f"Step {key_val}: {value[key_val][1]:.2f}"
-        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=5)
+        text_area = label.Label(terminalio.FONT, text=text, x=2, y=5)
         display.show(text_area)
         key_event = keys.events.get()
 
@@ -315,7 +313,6 @@ def show_menu(menu, highlight, shift):
             text_item = label.Label(
                 terminalio.FONT,
                 text=item,
-                color=0xFFFFFF,
                 x=10,
                 y=((line - 1) * line_height) + offset,
             )
@@ -424,9 +421,7 @@ class StartupState(State):
             text = "       DCZia\n  Electric Sampler"
             if len(text) > self.timer:
                 text = text[0 : self.timer]
-            text_area = label.Label(
-                terminalio.FONT, text=text, color=0xFFFFFF, x=2, y=5
-            )
+            text_area = label.Label(terminalio.FONT, text=text, x=2, y=5)
             display.show(text_area)
             self.color = (self.timer, self.timer, 0)
             if self.timer > (len(text) * 1.5):
@@ -436,9 +431,7 @@ class StartupState(State):
             text = "Fueled by Green Chile\n     and Solder"
             if len(text) > self.timer:
                 text = text[0 : self.timer]
-            text_area = label.Label(
-                terminalio.FONT, text=text, color=0xFFFFFF, x=2, y=10
-            )
+            text_area = label.Label(terminalio.FONT, text=text, x=2, y=10)
             display.show(text_area)
             if self.timer > (len(text) * 1.5):
                 self.timer = 0
@@ -546,7 +539,7 @@ class SequencerState(State):
     def update(self, machine):
         # Sequencer code
         text = "Sequencer"
-        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+        text_area = label.Label(terminalio.FONT, text=text, x=2, y=15)
         display.show(text_area)
         run_sequencer = True
         while run_sequencer is True:
@@ -600,9 +593,6 @@ class SamplerState(State):
 
     def enter(self, machine):
         self.last_position = 0
-        # text = "Sampler"
-        # text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-        # display.show(text_area)
         show_menu(self.seq_menu_items, self.highlight, self.shift)
         neopixels.fill((255, 0, 0))
         neopixels.show()
@@ -680,9 +670,7 @@ class SamplerState(State):
                 ]
                 # Display select file
                 text = "Sequence Created"
-                text_area = label.Label(
-                    terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
-                )
+                text_area = label.Label(terminalio.FONT, text=text, x=2, y=15)
                 display.show(text_area)
                 time.sleep(1)
                 enc_buttons_event = enc_buttons.events.get()
@@ -691,9 +679,7 @@ class SamplerState(State):
             if selection == "remove_sequence":
                 if len(sequencer.active_sequences) == 0:
                     text = "No Active Sequences"
-                    text_area = label.Label(
-                        terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
-                    )
+                    text_area = label.Label(terminalio.FONT, text=text, x=2, y=15)
                     display.show(text_area)
                     time.sleep(0.5)
                 else:
@@ -705,9 +691,7 @@ class SamplerState(State):
                 # Check if sequences exist
                 if len(sequencer.active_sequences) == 0:
                     text = "No Active Sequences"
-                    text_area = label.Label(
-                        terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
-                    )
+                    text_area = label.Label(terminalio.FONT, text=text, x=2, y=15)
                     display.show(text_area)
                     time.sleep(0.5)
                 else:
@@ -721,9 +705,7 @@ class SamplerState(State):
 
                     # Display
                     text = f"Edit {sequencer.active_sequences[selected_sequence].fname}"
-                    text_area = label.Label(
-                        terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
-                    )
+                    text_area = label.Label(terminalio.FONT, text=text, x=2, y=15)
                     display.show(text_area)
 
                     sequencer.active_sequences[selected_sequence].show_sequence()
@@ -766,7 +748,7 @@ class SamplerPlay(State):
 
     def enter(self, machine):
         text = "Playing"
-        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+        text_area = label.Label(terminalio.FONT, text=text, x=2, y=15)
         display.show(text_area)
         neopixels.fill((255, 0, 0))
         neopixels.show()
@@ -799,7 +781,7 @@ class MIDIState(State):
 
     def enter(self, machine):
         text = "MIDI Controller"
-        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+        text_area = label.Label(terminalio.FONT, text=text, x=2, y=15)
         display.show(text_area)
         neopixels.fill((100, 100, 100))
         neopixels.show()
@@ -892,32 +874,18 @@ class FlashyState(State):
                     if self.shift + self.total_lines < list_length:
                         self.shift += 1
             show_menu(self.menu_items, self.highlight, self.shift)
-            if (
-                self.menu_items[self.highlight - 1 + self.shift]["function"]
-                == "rainbow"
-            ):
+            selector = self.highlight - 1 + self.shift
+            if self.menu_items[selector]["function"] == "rainbow":
                 self.animation = Rainbow(neopixels, speed=0.1)
-            elif (
-                self.menu_items[self.highlight - 1 + self.shift]["function"]
-                == "rainbow_chase"
-            ):
+            elif self.menu_items[selector]["function"] == "rainbow_chase":
                 self.animation = RainbowChase(neopixels, speed=0.1)
-            elif (
-                self.menu_items[self.highlight - 1 + self.shift]["function"]
-                == "rainbow_comet"
-            ):
+            elif self.menu_items[selector]["function"] == "rainbow_comet":
                 self.animation = RainbowComet(neopixels, speed=0.1, tail_length=10)
-            elif (
-                self.menu_items[self.highlight - 1 + self.shift]["function"]
-                == "rainbow_sparkle"
-            ):
+            elif self.menu_items[selector]["function"] == "rainbow_sparkle":
                 self.animation = RainbowSparkle(
                     neopixels, speed=0.1, period=5, num_sparkles=None, step=1
                 )
-            elif (
-                self.menu_items[self.highlight - 1 + self.shift]["function"]
-                == "sparkle_pulse"
-            ):
+            elif self.menu_items[selector]["function"] == "sparkle_pulse":
                 self.animation = SparklePulse(
                     neopixels,
                     speed=0.1,
@@ -930,32 +898,18 @@ class FlashyState(State):
         self.last_position = position
         enc_buttons_event = enc_buttons.events.get()
         if enc_buttons_event and enc_buttons_event.pressed:
-            if (
-                self.menu_items[self.highlight - 1 + self.shift]["function"]
-                == "rainbow"
-            ):
+            selector = self.highlight - 1 + self.shift
+            if self.menu_items[selector]["function"] == "rainbow":
                 self.animation = Rainbow(neopixels, speed=0.1)
-            elif (
-                self.menu_items[self.highlight - 1 + self.shift]["function"]
-                == "rainbow_chase"
-            ):
+            elif self.menu_items[selector]["function"] == "rainbow_chase":
                 self.animation = RainbowChase(neopixels, speed=0.1)
-            elif (
-                self.menu_items[self.highlight - 1 + self.shift]["function"]
-                == "rainbow_comet"
-            ):
+            elif self.menu_items[selector]["function"] == "rainbow_comet":
                 self.animation = RainbowComet(neopixels, speed=0.1, tail_length=10)
-            elif (
-                self.menu_items[self.highlight - 1 + self.shift]["function"]
-                == "rainbow_sparkle"
-            ):
+            elif self.menu_items[selector]["function"] == "rainbow_sparkle":
                 self.animation = RainbowSparkle(
                     neopixels, speed=0.1, period=5, num_sparkles=None, step=1
                 )
-            elif (
-                self.menu_items[self.highlight - 1 + self.shift]["function"]
-                == "sparkle_pulse"
-            ):
+            elif self.menu_items[selector]["function"] == "sparkle_pulse":
                 self.animation = SparklePulse(
                     neopixels,
                     speed=0.1,
@@ -964,7 +918,7 @@ class FlashyState(State):
                     max_intensity=1,
                     min_intensity=0,
                 )
-            elif self.menu_items[self.highlight - 1 + self.shift]["function"] == "exit":
+            elif self.menu_items[selector]["function"] == "exit":
                 machine.go_to_state("menu")
 
 
@@ -1005,7 +959,7 @@ class HIDState(State):
 
     def enter(self, machine):
         text = "HID Controller"
-        text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+        text_area = label.Label(terminalio.FONT, text=text, x=2, y=15)
         display.show(text_area)
         neopixels.fill((100, 100, 100))
         neopixels.show()
