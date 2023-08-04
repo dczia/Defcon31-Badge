@@ -6,6 +6,7 @@ from setup import (
 )
 
 from StartupState import StartupState
+from MIDIState import MIDIState
 
 
 class StateMachine(object):
@@ -47,6 +48,7 @@ class StateMachine(object):
 
 machine = StateMachine()
 machine.add_state(StartupState())
+machine.add_state(MIDIState())
 machine.go_to_state("startup")
 
 while True:
