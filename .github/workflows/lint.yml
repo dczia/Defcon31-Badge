@@ -30,3 +30,15 @@ jobs:
         with:
           options: "--check --verbose"
           src: "./Software/Testing"
+
+      - name: Flake8 Lint Production
+        uses: py-actions/flake8@v2
+        with:
+            path: "./Software/Production"
+            ignore: "E501,E203,E722" #Ignore line to long, we don't care
+
+      - name: Black File Formatter Production
+        uses: psf/black@stable
+        with:
+          options: "--check --verbose"
+          src: "./Software/Production"
