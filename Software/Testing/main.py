@@ -32,14 +32,16 @@ list_length = 0
 total_lines = 3
 display_bus = displayio.I2CDisplay(i2c, device_address=0x3C)
 display = adafruit_displayio_ssd1306.SSD1306(display_bus, width=width, height=height)
+
+
 # Board LED
 led = digitalio.DigitalInOut(board.LED)
 led.direction = digitalio.Direction.OUTPUT
 
 # Neopixels
-pixel_pin = board.GP28
-num_pixels = 8
-neopixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.5, auto_write=True)
+#pixel_pin = board.GP28
+#num_pixels = 8
+#neopixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.5, #auto_write=True)
 
 # Sync Out
 sync_out = digitalio.DigitalInOut(board.GP7)
@@ -51,13 +53,14 @@ sync_in.direction = digitalio.Direction.INPUT
 
 # Setup Keyswitch Matrix
 matrix = keypad.KeyMatrix(
-    row_pins=(board.GP20, board.GP19, board.GP18),
-    column_pins=(board.GP27, board.GP26, board.GP22, board.GP21),
+    row_pins=(board.GP27, board.GP26, board.GP18),
+    column_pins=(board.GP20, board.GP21, board.GP22, board.GP28),
+    columns_to_anodes=False,
 )
 
 # Setup rotary encoders
-encoder_1 = rotaryio.IncrementalEncoder(board.GP4, board.GP5)
-encoder_2 = rotaryio.IncrementalEncoder(board.GP17, board.GP16)
+enc_volume = rotaryio.IncrementalEncoder(board.GP4, board.GP5)
+enc_select = rotaryio.IncrementalEncoder(board.GP16, board.GP17)
 
 # MIDI setup
 midi_uart = io.UART(rx=board.GP9, tx=board.GP8, baudrate=31250)
@@ -75,41 +78,42 @@ try:
     storage.mount(vfs, "/sd")
 except:
     text = "SD Card Failed!"
-    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+    text_area = label.Label(terminalio.FONT, text=text, x=2, y=15)
     display.show(text_area)
     time.sleep(10)
 
 # Setup audio
 audio = audiobusio.I2SOut(board.GP0, board.GP1, board.GP2)
-num_voices = 1
+num_voices = 10
 mixer = audiomixer.Mixer(
     voice_count=num_voices,
-    sample_rate=22050,
+    sample_rate=16000,
     channel_count=1,
     bits_per_sample=16,
     samples_signed=True,
 )
+time.sleep(0.1)
 mixer.voice[0].level = 0.5  # volume
+time.sleep(0.1)
+text = "Audio Test"
+text_area = label.Label(terminalio.FONT, text=text, x=2, y=15)
+display.show(text_area)
+# Load wav file
+wave_file = open("/samples/Snare.wav", "rb")
+wav = audiocore.WaveFile(wave_file)
+time.sleep(0.1)
+audio.play(mixer)
+for count in range(0, 5):
+    mixer.voice[0].play(wav)
+    while mixer.voice[0].playing:
+        pass
+audio.stop()
 
-
-def play_audio():
-    text = "Audio Test"
-    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
-    display.show(text_area)
-    # Load wav file
-    wave_file = open("/samples/kick.wav", "rb")
-    wav = audiocore.WaveFile(wave_file)
-    audio.play(mixer)
-    for count in range(0, 5):
-        mixer.voice[0].play(wav)
-        while mixer.voice[0].playing:
-            pass
-    audio.stop()
 
 
 def cycle_neopixels():
     text = "Neopixel Test"
-    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+    text_area = label.Label(terminalio.FONT, text=text, color=0x00FFFF, x=2, y=15)
     display.show(text_area)
 
     neopixels.fill((255, 0, 0))
@@ -131,37 +135,39 @@ def cycle_neopixels():
 
 def switch_check():
     text = "Switch Test"
-    text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15)
+    text_area = label.Label(terminalio.FONT, text=text, x=2, y=15)
     display.show(text_area)
     cycle = False
-    enc1_last_pos = encoder_1.position()
-    enc2_last_pos = encoder_2.position()
+    sel_last_pos = enc_select.position
+    vol_last_pos = enc_volume.position
     while cycle is False:
         event = matrix.events.get()
         if event:
             text = str(event)
             text_area = label.Label(
-                terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
+                terminalio.FONT, text=text, x=2, y=15
             )
             display.show(text_area)
             key = event.key_number
             if key == 11:
                 cycle = True
-        if enc1_last_pos != encoder_1.position():
-            text = str(encoder_1.position)
+        if vol_last_pos != enc_volume.position:
+            text = str(f"Volume: {enc_volume.position}")
             text_area = label.Label(
-                terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
+                terminalio.FONT, text=text, x=2, y=15
             )
             display.show(text_area)
-        if enc2_last_pos != encoder_2.position():
-            text = str(encoder_2.position)
+            vol_last_pos = enc_volume.position
+        if sel_last_pos != enc_select.position:
+            text = str(f"Select: {enc_select.position}")
             text_area = label.Label(
-                terminalio.FONT, text=text, color=0xFFFF00, x=2, y=15
+                terminalio.FONT, text=text, x=2, y=15
             )
             display.show(text_area)
+            sel_last_pos = enc_select.position
 
 
 while True:
-    play_audio()
-    cycle_neopixels()
+    #cycle_neopixels()
     switch_check()
+
