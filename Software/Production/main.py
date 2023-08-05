@@ -10,7 +10,7 @@ from FlashyState import FlashyState
 from MIDIState import MIDIState
 from HIDState import HIDState
 from MenuState import MenuState
-from SequencerState import (SamplerMenuState, SequencerMenuState, SequencerPlayState)
+from SequencerState import SamplerMenuState, SequencerMenuState, SequencerPlayState
 
 
 class StateMachine(object):

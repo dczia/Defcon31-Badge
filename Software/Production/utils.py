@@ -7,6 +7,24 @@ from setup import (
 )
 
 
+def selector_calcs(menu, highlight, shift, last_position, position):
+    list_length = len(menu)
+    total_lines = 3
+    if position < last_position:
+        if highlight > 1:
+            highlight -= 1
+        else:
+            if shift > 0:
+                shift -= 1
+    else:
+        if highlight < total_lines:
+            highlight += 1
+        else:
+            if shift + total_lines < list_length:
+                shift += 1
+    return (highlight, shift)
+
+
 def show_menu(menu, highlight, shift):
     """Shows the menu on the screen"""
 
