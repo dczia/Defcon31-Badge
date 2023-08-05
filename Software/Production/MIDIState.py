@@ -65,7 +65,8 @@ class MIDIState(State):
                     neopixels[key] = (255, 0, 0)
                 if key_event.released:
                     key = key_event.key_number
-                    self.notes.remove(key)
+                    if key in self.notes:
+                        self.notes.remove(key)
                     send_note_off(key, 4)
                     neopixels[key] = (100, 100, 100)
             elif (key_event.key_number == 10) and key_event.pressed:  # Select Button
