@@ -1,23 +1,28 @@
-import time
-import board
-import audiomixer
 import audiobusio
+import audiomixer
+import board
 import terminalio
-from os import listdir
+import time
+
 from adafruit_display_text import label
-from audiocore import WaveFile
-from supervisor import ticks_ms
-from State import State
-from utils import show_menu
-from setup import (
-    keys,
-    display,
-    neopixels,
-    volume_enc,
-    select_enc,
-)
-from MIDIState import send_note_on, send_note_off
 from adafruit_led_animation.animation.rainbow import Rainbow
+from audiocore import WaveFile
+from MIDIState import send_note_on, send_note_off
+from os import listdir
+from supervisor import ticks_ms
+
+from State import State
+from utils import (
+    selector_calcs,
+    show_menu,
+)
+from setup import (
+    display,
+    keys,
+    neopixels,
+    select_enc,
+    volume_enc,
+)
 
 
 class file_sequences:
@@ -144,6 +149,13 @@ class SamplerMenuState(State):
         self.list_length = len(self.menu_items)
         self.highlight = 1
         self.shift = 0
+        # Get list of samples ONCE
+        wav_files = []
+        files = listdir("/samples/")
+        for file in files:
+            if file.endswith(".wav") and (not file.startswith(".")):
+                wav_files.append({"name": file, "pretty": file})
+        self.samples = wav_files
 
     def enter(self, machine):
         self.last_position = 0
@@ -157,21 +169,48 @@ class SamplerMenuState(State):
 
     def select_wav(self):
         # Show valid files, select with encoder knob/button
-        files = listdir("/samples/")
-        wav_files = []
-        for file in files:
-            if file.endswith(".wav"):
-                wav_files.append({"name": file, "pretty": file})
-        selection = menu_select(select_enc.position, wav_files)
-        return selection
+        self.highlight = 1
+        self.shift = 0
+        while True:
+            if self.last_position != select_enc.position:
+                (self.highlight, self.shift) = selector_calcs(
+                    self.samples,
+                    self.highlight,
+                    self.shift,
+                    self.last_position,
+                    select_enc.position,
+                )
+                self.last_position = select_enc.position
+            show_menu(self.samples, self.highlight, self.shift)
+            key_event = keys.events.get()
+            if key_event and key_event.pressed:
+                print(key_event.key_number)
+                selection = self.samples[self.highlight - 1 + self.shift]["name"]
+                return selection
 
     def select_sequence(self, sequence_array):
+        self.highlight = 1
+        self.shift = 0
         # Show valid sequences, select with encoder knob/button
         seq_select = []
         for index, seq in enumerate(sequence_array):
-            seq_select.append({"name": index, "pretty": seq.fname})
-        selection = menu_select(select_enc.position, seq_select)
-        return selection
+            seq_select.append({"name": index, "pretty": f"{index}: {seq.fname}"})
+        while True:
+            if self.last_position != select_enc.position:
+                (self.highlight, self.shift) = selector_calcs(
+                    self.seq_select,
+                    self.highlight,
+                    self.shift,
+                    self.last_position,
+                    select_enc.position,
+                )
+                self.last_position = select_enc.position
+            show_menu(self.seq_select, self.highlight, self.shift)
+            key_event = keys.events.get()
+            if key_event and key_event.pressed:
+                print(key_event.key_number)
+                selection = self.highlight - 1 + self.shift
+                return selection
 
     # Function to program sequence values, should be used after a keypress
     # On key release toggle state
@@ -211,6 +250,7 @@ class SamplerMenuState(State):
                     selection = False
 
     def add_sequence(self, fsequences):
+        select_wav()
         pass
 
     def edit_sequence(self, fsequences):
@@ -248,6 +288,8 @@ class SamplerMenuState(State):
             selection = self.menu_items[self.highlight - 1 + self.shift]["name"]
         if selection == "play_sequence":
             machine.go_to_state("sequencer_play")
+        if selection == "add_sequence":
+            self.select_wav()
         if selection == "exit":
             machine.go_to_state("menu")
 
