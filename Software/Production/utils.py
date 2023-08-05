@@ -7,6 +7,15 @@ from setup import (
 )
 
 
+def neoindex(key_number):
+    mapping = [4, 5, 6, 7, 0, 1, 2, 3, 10, 11]
+    try:
+        neopixel_index = mapping[key_number]
+    except IndexError:
+        neopixel_index = 0
+    return neopixel_index
+
+
 def selector_calcs(menu, highlight, shift, last_position, position):
     list_length = len(menu)
     total_lines = 3
