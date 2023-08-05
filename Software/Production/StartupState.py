@@ -58,10 +58,8 @@ class StartupState(State):
                 self.timer = self.timer + 1  # make it faster
             else:
                 time.sleep(0.1)
-                machine.go_to_state(
-                    "startup"
-                )  # TODO: Should go to menu when that is in
+                machine.go_to_state("menu")
         # Skip to menu if encoder is pressed
         key_event = keys.events.get()
         if key_event and key_event.pressed:
-            machine.go_to_state("startup")  # TODO: Should go to menu when that is in
+            machine.go_to_state("menu")
