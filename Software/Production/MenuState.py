@@ -16,6 +16,14 @@ class MenuState(State):
             "pretty": "Flashy",
         },
         {
+            "name": "sampler_menu",
+            "pretty": "Sampler",
+        },
+        {
+            "name": "sequencer_menu",
+            "pretty": "Sequencer",
+        },
+        {
             "name": "midi_controller",
             "pretty": "MIDI Controller",
         },
