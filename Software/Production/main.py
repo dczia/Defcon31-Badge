@@ -6,6 +6,7 @@ from setup import (
 )
 
 from StartupState import StartupState
+from FlashyState import FlashyState
 
 
 class StateMachine(object):
@@ -47,6 +48,7 @@ class StateMachine(object):
 
 machine = StateMachine()
 machine.add_state(StartupState())
+machine.add_state(FlashyState())
 machine.go_to_state("startup")
 
 while True:
