@@ -107,7 +107,7 @@ class HIDState(State):
                     self.kbd.release(self.keymap[key_event.key_number])
                     neopixels[key_event.key_number] = (100, 100, 100)
             elif (key_event.key_number == 10) and key_event.pressed:  # Select Button
-                machine.go_to_state("startup")  # TODO: change to menu
+                machine.go_to_state("menu")
                 return
             elif (key_event.key_number == 11) and key_event.pressed:  # Volume Button
                 self.consumer_control.send(ConsumerControlCode.MUTE)

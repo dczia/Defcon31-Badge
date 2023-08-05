@@ -9,6 +9,7 @@ from StartupState import StartupState
 from FlashyState import FlashyState
 from MIDIState import MIDIState
 from HIDState import HIDState
+from MenuState import MenuState
 
 
 class StateMachine(object):
@@ -53,6 +54,7 @@ machine.add_state(StartupState())
 machine.add_state(FlashyState())
 machine.add_state(MIDIState())
 machine.add_state(HIDState())
+machine.add_state(MenuState())
 machine.go_to_state("startup")
 
 while True:
