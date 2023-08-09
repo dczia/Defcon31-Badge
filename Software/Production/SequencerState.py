@@ -309,6 +309,45 @@ class SamplerMenuState(State):
                         file_sequences.show_sequence(selected_sequence)
                         neopixels.show()
 
+
+                # Exit on click of select encoder
+                key_event = keys.events.get()
+                if key_event and key_event.pressed and key_event.key_number == 10:
+                    # Reset menu status
+                    self.highlight = 1
+                    self.shift = 0
+                    # Exit editing menu
+                    editing_sequence = False
+
+            # Select sequence
+            selected_sequence = self.select_sequence(
+                file_sequences.files
+            )  # Modify to index based on selected
+
+            # Display
+            text = f"Edit {file_sequences.files[selected_sequence]}"
+            text_area = label.Label(terminalio.FONT, text=text, x=2, y=15)
+            display.show(text_area)
+
+            file_sequences.show_sequence(selected_sequence)
+            neopixels.show()
+
+            while editing_sequence is True:
+                # Code to edit a sequence here
+                key_event = keys.events.get()
+                if key_event and key_event.pressed:
+                    key = key_event.key_number
+                    if key >= 0 and key <= 7:
+                        self.sequence_selector(
+                            file_sequences.sequences[selected_sequence],
+                            0,
+                            1,
+                            0.05,
+                            key,
+                        )
+                        file_sequences.show_sequence(selected_sequence)
+                        neopixels.show()
+
                 # Exit on click of select encoder
                 if key_event and key_event.pressed and key_event.key_number == 10:
                     # Reset menu status
@@ -363,9 +402,11 @@ class SamplerMenuState(State):
             wav_file = self.select_wav()
             file_sequences.add_sequence(wav_file)
             show_menu(self.menu_items, self.highlight, self.shift)
+
         if selection == "remove_sequence":
             self.remove_sequence()
             show_menu(self.menu_items, self.highlight, self.shift)
+
         if selection == "edit_sequence":
             self.edit_sequence(file_sequences)
             show_menu(self.menu_items, self.highlight, self.shift)
