@@ -54,7 +54,7 @@ volume_enc = rotaryio.IncrementalEncoder(board.GP4, board.GP5)
 
 # MIDI setup
 midi_uart = busio.UART(tx=board.GP8, baudrate=31250)
-midi_serial_channel = 2
+midi_serial_channel = 1
 midi_serial = adafruit_midi.MIDI(
     midi_out=midi_uart, out_channel=midi_serial_channel - 1
 )

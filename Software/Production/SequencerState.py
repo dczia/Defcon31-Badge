@@ -15,6 +15,7 @@ from State import State
 from utils import (
     selector_calcs,
     show_menu,
+    neoindex,
 )
 from setup import (
     display,
@@ -36,7 +37,7 @@ class file_sequences:
         self.files.append(fname)
         self.sequences.append(
             [
-                [False, 0.5],
+                [True, 0.5],
                 [True, 0.5],
                 [True, 0.5],
                 [True, 0.5],
@@ -47,13 +48,15 @@ class file_sequences:
             ]
         )
 
-    def show_sequence(self):
-        for index, item in enumerate(self.sequence):
+    def show_sequence(self, sequence_index):
+        for index, item in enumerate(self.sequences[sequence_index]):
             if item[0]:
-                neopixels[index] = (0, 0, 255)
+                mapped_neopixel = neoindex(index)
+                neopixels[mapped_neopixel] = (0, 0, 255)
                 neopixels.show()
             elif item[0] is False:
-                neopixels[index] = (255, 0, 0)
+                mapped_neopixel = neoindex(index)
+                neopixels[mapped_neopixel] = (255, 0, 0)
                 neopixels.show()
 
 
@@ -80,10 +83,12 @@ class midi_sequences:
     def show_sequence(self):
         for index, item in enumerate(self.sequence):
             if item[0]:
-                neopixels[index] = (0, 0, 255)
+                mapped_neopixel = neoindex(index)
+                neopixels[mapped_neopixel] = (0, 0, 255)
                 neopixels.show()
             elif item[0] is False:
-                neopixels[index] = (255, 0, 0)
+                mapped_neopixel = neoindex(index)
+                neopixels[mapped_neopixel] = (255, 0, 0)
                 neopixels.show()
 
 
@@ -99,6 +104,7 @@ class SequencerMenuState:
         text = "MIDI Sequencer Menu"
         text_area = label.Label(terminalio.FONT, text=text, x=2, y=10)
         display.show(text_area)
+        keys.events.clear()
         State.enter(self, machine)
 
     def play_midi(self):
@@ -112,7 +118,10 @@ class SequencerMenuState:
     def update(self, machine):
         key_event = keys.events.get()
         if key_event and key_event.pressed:
-            machine.go_to_state("sequencer_play")
+            if key_event.key_number == 8:
+                machine.go_to_state("sequencer_play")
+            if key_event.key_number == 10:
+                machine.go_to_state("menu")
 
 
 class SamplerMenuState(State):
@@ -184,7 +193,6 @@ class SamplerMenuState(State):
             show_menu(self.samples, self.highlight, self.shift)
             key_event = keys.events.get()
             if key_event and key_event.pressed:
-                print(key_event.key_number)
                 selection = self.samples[self.highlight - 1 + self.shift]["name"]
                 return selection
 
@@ -194,28 +202,29 @@ class SamplerMenuState(State):
         # Show valid sequences, select with encoder knob/button
         seq_select = []
         for index, seq in enumerate(sequence_array):
-            seq_select.append({"name": index, "pretty": f"{index}: {seq.fname}"})
+            seq_select.append({"name": f"{index}", "pretty": f"{index}: {seq}"})
+
         while True:
             if self.last_position != select_enc.position:
                 (self.highlight, self.shift) = selector_calcs(
-                    self.seq_select,
+                    seq_select,
                     self.highlight,
                     self.shift,
                     self.last_position,
                     select_enc.position,
                 )
                 self.last_position = select_enc.position
-            show_menu(self.seq_select, self.highlight, self.shift)
+            show_menu(seq_select, self.highlight, self.shift)
             key_event = keys.events.get()
             if key_event and key_event.pressed:
-                print(key_event.key_number)
+
                 selection = self.highlight - 1 + self.shift
                 return selection
 
     # Function to program sequence values, should be used after a keypress
     # On key release toggle state
     # On key held and encoder turned, value changed
-    def sequence_selector(value, min_val, max_val, increment, key_val):
+    def sequence_selector(self, value, min_val, max_val, increment, key_val):
         selection = True
         vel_change = False
         select_position = select_enc.position
@@ -250,11 +259,54 @@ class SamplerMenuState(State):
                     selection = False
 
     def add_sequence(self, fsequences):
-        select_wav()
-        pass
+        wav_file = self.select_wav()
+        file_sequences.files.append(wav_file)
+        file_sequences.add_sequence()
 
     def edit_sequence(self, fsequences):
-        pass
+        # Check if sequences exist
+        if len(file_sequences.files) == 0:
+            text = "No Active Sequences"
+            text_area = label.Label(terminalio.FONT, text=text, x=2, y=15)
+            display.show(text_area)
+            time.sleep(0.5)
+        else:
+            editing_sequence = True
+
+            # Select sequence
+            selected_sequence = self.select_sequence(
+                file_sequences.files
+            )  # Modify to index based on selected
+
+            # Display
+            text = f"Edit {file_sequences.files[selected_sequence]}"
+            text_area = label.Label(terminalio.FONT, text=text, x=2, y=15)
+            display.show(text_area)
+
+            file_sequences.show_sequence(selected_sequence)
+            neopixels.show()
+
+            while editing_sequence is True:
+                # Code to edit a sequence here
+                key_event = keys.events.get()
+                if key_event and key_event.pressed:
+                    key = key_event.key_number
+                    if key >= 0 and key <= 7:
+                        self.sequence_selector(
+                            file_sequences.sequences[selected_sequence],
+                            0,
+                            1,
+                            0.05,
+                            key,
+                        )
+                        file_sequences.show_sequence(selected_sequence)
+                        neopixels.show()
+                # Update to play/pause button for final hardware
+                key_event = keys.events.get()
+                if key_event and key_event.pressed and key_event.key_number == 10:
+                    editing_sequence = False
+                # Press encoder to exit
+                # Press play to start
 
     def remove_sequence(self, fsequences):
         pass
@@ -289,7 +341,12 @@ class SamplerMenuState(State):
         if selection == "play_sequence":
             machine.go_to_state("sequencer_play")
         if selection == "add_sequence":
-            self.select_wav()
+            wav_file = self.select_wav()
+            file_sequences.add_sequence(wav_file)
+            show_menu(self.menu_items, self.highlight, self.shift)
+        if selection == "edit_sequence":
+            self.edit_sequence(file_sequences)
+            show_menu(self.menu_items, self.highlight, self.shift)
         if selection == "exit":
             machine.go_to_state("menu")
 
@@ -302,7 +359,7 @@ class SequencerPlayState(State):
     sequencer_mode = "sampler"
     sampler_files = []
     sampler_voices = []
-    bpm = 200
+    bpm = 300
 
     @property
     def name(self):
@@ -338,7 +395,7 @@ class SequencerPlayState(State):
 
             # Load files
             for item in file_sequences.files:
-                self.sampler_files.append(open(item, "rb"))
+                self.sampler_files.append(open(f"/samples/{item}", "rb"))
                 self.sampler_voices.append(WaveFile(self.sampler_files[-1]))
 
             # Delay to avoid audio click
@@ -372,12 +429,15 @@ class SequencerPlayState(State):
 
     def timed_sampler(self):
         # Play
+        for index, sequence in enumerate(file_sequences.sequences):
+            if sequence[self.step][0] is True:
+                self.mixer.voice[index].level = self.volume * sequence[self.step][1]
+                self.mixer.voice[index].play(self.sampler_voices[index])
         step_start = ticks_ms()
-        self.play_voices()
-        while self.mixer.voice[0].playing:
-            while ticks_ms() < step_start + self.step_length:
-                pass
-        self.stop_voices()
+        while ticks_ms() < (step_start + self.step_length):
+            pass
+        # I don't think we need to kill voices, but leaving this here just in case
+        # self.stop_voices()
 
     def adjust_bpm(self):
         # Adjust bpm if select_enc state changes
@@ -394,8 +454,9 @@ class SequencerPlayState(State):
                 else:
                     self.bpm = 300
             select_enc.position = self.select_position
-            text = f"BPM: {self.bpm}"
-            text_area = label.Label(terminalio.FONT, text=text, x=2, y=10)
+            # Display text would be nice, but this makes the audio chirp *shrug*
+            # text = f"BPM: {self.bpm}"
+            # text_area = label.Label(terminalio.FONT, text=text, x=2, y=10)
             # display.show(text_area)
 
     def adjust_volume(self):
@@ -415,8 +476,9 @@ class SequencerPlayState(State):
                 else:
                     self.volume = 1
             volume_enc.position = self.volume_position
-            text = f"Volume: {self.volume}"
-            text_area = label.Label(terminalio.FONT, text=text, x=2, y=10)
+            # Display text would be nice, but this makes the audio chirp *shrug*
+            # text = f"Volume: {self.volume}"
+            # text_area = label.Label(terminalio.FONT, text=text, x=2, y=10)
             # display.show(text_area)
         self.audio.play(self.mixer)
 
@@ -425,7 +487,10 @@ class SequencerPlayState(State):
         if key_event and key_event.pressed:
             # Return to sequencer menu if select pressed
             if key_event.key_number == 10:
-                self.audio.deinit()
+                try:
+                    self.audio.deinit()
+                except:
+                    pass
                 keys.events.clear()
                 if self.sequencer_mode == "midi":
                     state_machine.go_to_state("sequencer_menu")
@@ -446,8 +511,9 @@ class SequencerPlayState(State):
     def pause_sequencer(self):
         pause_state = True
         self.stop_voices()
-        text = "Paused"
-        text_area = label.Label(terminalio.FONT, text=text, x=2, y=10)
+        # Display text would be nice, but this makes the audio chirp *shrug*
+        # text = "Paused"
+        # text_area = label.Label(terminalio.FONT, text=text, x=2, y=10)
         # display.show(text_area)
         while pause_state is True:
             key_event = keys.events.get()
@@ -472,5 +538,5 @@ class SequencerPlayState(State):
 midi_sequences = midi_sequences()
 midi_sequences.add_sequence()
 file_sequences = file_sequences()
-file_sequences.add_sequence("/samples/Tom.wav")
+# file_sequences.add_sequence("/samples/Tom.wav")
 # file_sequences.add_sequence('/samples/Snare.wav')
