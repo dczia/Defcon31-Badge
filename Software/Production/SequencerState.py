@@ -167,6 +167,8 @@ class SamplerMenuState(State):
         self.samples = wav_files
 
     def enter(self, machine):
+        self.highlight = 1
+        self.shift = 0
         self.last_position = 0
         if machine.animation is None:
             machine.animation = Rainbow(neopixels, speed=0.1)
@@ -177,9 +179,10 @@ class SamplerMenuState(State):
         State.exit(self, machine)
 
     def select_wav(self):
-        # Show valid files, select with encoder knob/button
+        # Reset menu status
         self.highlight = 1
         self.shift = 0
+        # Show valid files, select with encoder knob/button
         while True:
             if self.last_position != select_enc.position:
                 (self.highlight, self.shift) = selector_calcs(
@@ -194,9 +197,13 @@ class SamplerMenuState(State):
             key_event = keys.events.get()
             if key_event and key_event.pressed:
                 selection = self.samples[self.highlight - 1 + self.shift]["name"]
+                # Reset menu status
+                self.highlight = 1
+                self.shift = 0
                 return selection
 
     def select_sequence(self, sequence_array):
+        # Reset menu status
         self.highlight = 1
         self.shift = 0
         # Show valid sequences, select with encoder knob/button
@@ -301,12 +308,16 @@ class SamplerMenuState(State):
                         )
                         file_sequences.show_sequence(selected_sequence)
                         neopixels.show()
-                # Update to play/pause button for final hardware
+
+                # Exit on click of select encoder
                 key_event = keys.events.get()
                 if key_event and key_event.pressed and key_event.key_number == 10:
+                    # Reset menu status
+                    self.highlight = 1
+                    self.shift = 0
+                    # Exit editing menu
                     editing_sequence = False
-                # Press encoder to exit
-                # Press play to start
+
 
     def remove_sequence(self, fsequences):
         pass
@@ -366,6 +377,8 @@ class SequencerPlayState(State):
         return "sequencer_play"
 
     def enter(self, machine):
+        # Clear key states
+        keys.events.clear()
         # Get current encoder positions
         self.volume_position = volume_enc.position
         self.select_position = select_enc.position

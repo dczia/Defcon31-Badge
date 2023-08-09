@@ -4,7 +4,6 @@ from setup import (
     select_enc,
     volume_enc,
 )
-from audiocore import WaveFile
 from StartupState import StartupState
 from FlashyState import FlashyState
 from MIDIState import MIDIState

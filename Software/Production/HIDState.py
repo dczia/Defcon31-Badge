@@ -12,6 +12,9 @@ from setup import (
     select_enc,
     volume_enc,
 )
+from utils import (
+    neoindex,
+)
 
 from State import State
 
@@ -102,10 +105,12 @@ class HIDState(State):
             if key_event.key_number < 10:
                 if key_event.pressed:
                     self.kbd.press(self.keymap[key_event.key_number])
-                    neopixels[key_event.key_number] = (255, 0, 0)
+                    mapped_neopixel = neoindex(key_event.key_number)
+                    neopixels[mapped_neopixel] = (255, 0, 0)
                 if key_event.released:
                     self.kbd.release(self.keymap[key_event.key_number])
-                    neopixels[key_event.key_number] = (100, 100, 100)
+                    mapped_neopixel = neoindex(key_event.key_number)
+                    neopixels[mapped_neopixel] = (100, 100, 100)
             elif (key_event.key_number == 10) and key_event.pressed:  # Select Button
                 machine.go_to_state("menu")
                 return
