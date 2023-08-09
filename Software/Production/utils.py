@@ -57,7 +57,9 @@ def show_menu(menu, highlight, shift):
         try:
             short_list.append(menu[index]["pretty"])
         except IndexError:
-            print("show_menu: Bad Index")
+            pass
+            # Supressing this because it can show up just with short lists
+            # print("show_menu: Bad Index")
     for item in short_list:
         if highlight == line:
             white_rectangle = displayio.TileGrid(
