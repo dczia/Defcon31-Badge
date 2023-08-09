@@ -5,6 +5,9 @@ from adafruit_midi.control_change import ControlChange
 from adafruit_display_text import label
 from State import State
 
+from utils import (
+    neoindex,
+)
 from setup import (
     display,
     keys,
@@ -62,13 +65,15 @@ class MIDIState(State):
                     key = key_event.key_number
                     self.notes.append(key)
                     send_note_on(key, 4)
-                    neopixels[key] = (255, 0, 0)
+                    mapped_neopixel = neoindex(key)
+                    neopixels[mapped_neopixel] = (255, 0, 0)
                 if key_event.released:
                     key = key_event.key_number
                     if key in self.notes:
                         self.notes.remove(key)
                     send_note_off(key, 4)
-                    neopixels[key] = (100, 100, 100)
+                    mapped_neopixel = neoindex(key)
+                    neopixels[mapped_neopixel] = (100, 100, 100)
             elif (key_event.key_number == 10) and key_event.pressed:  # Select Button
                 machine.go_to_state("menu")
                 return
