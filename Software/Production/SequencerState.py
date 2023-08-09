@@ -310,7 +310,6 @@ class SamplerMenuState(State):
                         neopixels.show()
 
                 # Exit on click of select encoder
-                key_event = keys.events.get()
                 if key_event and key_event.pressed and key_event.key_number == 10:
                     # Reset menu status
                     self.highlight = 1
@@ -318,9 +317,18 @@ class SamplerMenuState(State):
                     # Exit editing menu
                     editing_sequence = False
 
+    def remove_sequence(self):
+        # Check if sequences exist
+        if len(file_sequences.files) == 0:
+            text = "No Active Sequences"
+            text_area = label.Label(terminalio.FONT, text=text, x=2, y=15)
+            display.show(text_area)
+            time.sleep(0.5)
 
-    def remove_sequence(self, fsequences):
-        pass
+        else:
+            selected_sequence = self.select_sequence(file_sequences.files)
+            del file_sequences.files[selected_sequence]
+            del file_sequences.sequences[selected_sequence]
 
     def update(self, machine):
         selection = ""
@@ -354,6 +362,9 @@ class SamplerMenuState(State):
         if selection == "add_sequence":
             wav_file = self.select_wav()
             file_sequences.add_sequence(wav_file)
+            show_menu(self.menu_items, self.highlight, self.shift)
+        if selection == "remove_sequence":
+            self.remove_sequence()
             show_menu(self.menu_items, self.highlight, self.shift)
         if selection == "edit_sequence":
             self.edit_sequence(file_sequences)
