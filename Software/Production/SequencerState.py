@@ -309,6 +309,7 @@ class SamplerMenuState(State):
                         file_sequences.show_sequence(selected_sequence)
                         neopixels.show()
 
+
                 # Exit on click of select encoder
                 key_event = keys.events.get()
                 if key_event and key_event.pressed and key_event.key_number == 10:
