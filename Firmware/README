@@ -1,0 +1,3 @@
+To flash, hold down the BOOTSEL button on the Pi Pico and plug into a computer
+Copy the DCZiaSampler.uf2 to the Pico
+The Pico should automatically reboot with the full firmware
