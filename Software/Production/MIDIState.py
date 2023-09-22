@@ -144,6 +144,9 @@ class MIDIState(State):
             self.last_volume_position = volume_enc.position
 
     def update(self, machine):
+        # Listen on USB MIDI, resolves issues with some software
+        # TODO Make this more elegant
+        midi_usb.receive()
         key_event = keys.events.get()
         if key_event:
             if key_event.key_number < 8:
