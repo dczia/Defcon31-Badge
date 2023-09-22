@@ -34,7 +34,7 @@ class StartupState(State):
         if self.stage == 0:
             text = "       DCZia\n  Electric Sampler"
             if len(text) > self.timer:
-                text = text[0 : self.timer]
+                text = text[0: self.timer]
             text_area = label.Label(terminalio.FONT, text=text, x=2, y=5)
             display.show(text_area)
             self.color = (self.timer, self.timer, 0)
@@ -44,7 +44,7 @@ class StartupState(State):
         elif self.stage == 1:
             text = "Fueled by Green Chile\n     and Solder"
             if len(text) > self.timer:
-                text = text[0 : self.timer]
+                text = text[0: self.timer]
             text_area = label.Label(terminalio.FONT, text=text, x=2, y=10)
             display.show(text_area)
             if self.timer > (len(text) * 1.5):

@@ -59,7 +59,9 @@ midi_serial = adafruit_midi.MIDI(
     midi_out=midi_uart, out_channel=midi_serial_channel - 1
 )
 
-midi_usb = adafruit_midi.MIDI(midi_out=usb_midi.ports[1], out_channel=0)
+midi_usb = adafruit_midi.MIDI(
+    midi_in=usb_midi.ports[0], midi_out=usb_midi.ports[1], out_channel=0
+)
 
 # Setup the SD card and mount it as /sd
 try:
