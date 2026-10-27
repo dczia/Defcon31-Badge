@@ -17,12 +17,19 @@ from adafruit_display_text import label
 
 # OLED Screen ( display )
 displayio.release_displays()
-i2c = busio.I2C(board.GP15, board.GP14)
+# 400 kHz fast mode: a full 128x32 frame is 512 bytes plus overhead, so
+# the default 100 kHz makes every display.show() cost roughly 50 ms.
+i2c = busio.I2C(board.GP15, board.GP14, frequency=400_000)
 display_bus = displayio.I2CDisplay(i2c, device_address=0x3C)
 display = adafruit_displayio_ssd1306.SSD1306(display_bus, width=128, height=32)
 
 # Neopixels
-neopixels = neopixel.NeoPixel(board.GP3, 10, brightness=0.1, auto_write=True)
+# auto_write pushes the whole strip on every single pixel assignment, so a
+# multi-pixel update costs one full write per pixel. adafruit_led_animation
+# also sets auto_write False on this object as soon as any animation is
+# constructed, so leaving it True here only made the behaviour inconsistent
+# depending on whether an animation had been created yet. Push explicitly.
+neopixels = neopixel.NeoPixel(board.GP3, 10, brightness=0.1, auto_write=False)
 
 # Board LED
 led = digitalio.DigitalInOut(board.LED)
@@ -53,10 +60,14 @@ select_enc = rotaryio.IncrementalEncoder(board.GP16, board.GP17)
 volume_enc = rotaryio.IncrementalEncoder(board.GP4, board.GP5)
 
 # MIDI setup
-midi_uart = busio.UART(tx=board.GP8, baudrate=31250)
+# GP9 is the receive side of the opto-isolated MIDI IN jack (U5, TLP2361).
+midi_uart = busio.UART(tx=board.GP8, rx=board.GP9, baudrate=31250)
 midi_serial_channel = 1
 midi_serial = adafruit_midi.MIDI(
-    midi_out=midi_uart, out_channel=midi_serial_channel - 1
+    midi_in=midi_uart,
+    midi_out=midi_uart,
+    in_channel=midi_serial_channel - 1,
+    out_channel=midi_serial_channel - 1,
 )
 
 midi_usb = adafruit_midi.MIDI(

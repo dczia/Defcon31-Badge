@@ -8,7 +8,10 @@ from setup import (
 
 
 def neoindex(key_number):
-    mapping = [4, 5, 6, 7, 3, 2, 1, 0, 10, 11]
+    # Front board carries exactly 10 addressable LEDs (D101-D110).
+    # D101-D108 sit above/below the 8 pads; D109 and D110 sit at the
+    # Play and Function buttons, so keys 8 and 9 map to pixels 8 and 9.
+    mapping = [4, 5, 6, 7, 3, 2, 1, 0, 8, 9]
     try:
         neopixel_index = mapping[key_number]
     except IndexError:
@@ -41,7 +44,6 @@ def show_menu(menu, highlight, shift):
     # bring in the global variables
 
     # menu variables
-    item = 1
     line = 1
     line_height = 10
     offset = 5

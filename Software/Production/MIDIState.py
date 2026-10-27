@@ -26,17 +26,6 @@ g_1 = 31
 a_1 = 33
 b_1 = 35
 
-# MIDI Functions
-# def send_note_on(note, octv):
-#     note = (note) + (12 * octv)
-#     midi_serial.send(NoteOn(note, 120))
-#     midi_usb.send(NoteOn(note, 120))
-
-
-# def send_note_off(note, octv):
-#     note = (note) + (12 * octv)
-#     midi_serial.send(NoteOff(note, 0))
-#     midi_usb.send(NoteOff(note, 120))
 
 # MIDI Functions
 def send_note_on(note):

@@ -31,7 +31,6 @@ from adafruit_hid.consumer_control_code import ConsumerControlCode
 from adafruit_hid.keyboard import Keyboard
 from adafruit_hid.keycode import Keycode
 
-
 # Setup audio
 audio = audiobusio.I2SOut(board.GP0, board.GP1, board.GP2)
 num_voices = 9

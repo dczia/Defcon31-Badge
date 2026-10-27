@@ -53,11 +53,10 @@ class file_sequences:
             if item[0]:
                 mapped_neopixel = neoindex(index)
                 neopixels[mapped_neopixel] = (0, 0, 255)
-                neopixels.show()
             elif item[0] is False:
                 mapped_neopixel = neoindex(index)
                 neopixels[mapped_neopixel] = (255, 0, 0)
-                neopixels.show()
+        neopixels.show()
 
 
 # MIDI sequencer class
@@ -80,17 +79,6 @@ class midi_sequences:
             ]
         )
 
-    def show_sequence(self):
-        for index, item in enumerate(self.sequence):
-            if item[0]:
-                mapped_neopixel = neoindex(index)
-                neopixels[mapped_neopixel] = (0, 0, 255)
-                neopixels.show()
-            elif item[0] is False:
-                mapped_neopixel = neoindex(index)
-                neopixels[mapped_neopixel] = (255, 0, 0)
-                neopixels.show()
-
 
 class SequencerMenuState:
     sequencer_mode = "midi"
@@ -101,6 +89,7 @@ class SequencerMenuState:
 
     def enter(self, machine):
         neopixels.fill((0, 0, 0))
+        neopixels.show()
         text = "MIDI Sequencer Menu"
         text_area = label.Label(terminalio.FONT, text=text, x=2, y=10)
         display.show(text_area)
@@ -112,6 +101,7 @@ class SequencerMenuState:
 
     def exit(self, machine):
         neopixels.fill((255, 0, 0))
+        neopixels.show()
         self.color = (0, 0, 0)
         State.exit(self, machine)
 
@@ -160,7 +150,11 @@ class SamplerMenuState(State):
         self.shift = 0
         # Get list of samples ONCE
         wav_files = []
-        files = listdir("/samples/")
+        try:
+            files = listdir("/samples/")
+        except OSError:
+            # No samples directory: start empty rather than failing at boot
+            files = []
         for file in files:
             if file.endswith(".wav") and (not file.startswith(".")):
                 wav_files.append({"name": file, "pretty": file})
@@ -182,10 +176,17 @@ class SamplerMenuState(State):
         # Reset menu status
         self.highlight = 1
         self.shift = 0
+        if len(self.samples) == 0:
+            text = "No Samples Found"
+            text_area = label.Label(terminalio.FONT, text=text, x=2, y=15)
+            display.show(text_area)
+            time.sleep(0.5)
+            return None
         # Show valid files, select with encoder knob/button
+        show_menu(self.samples, self.highlight, self.shift)
         while True:
             if self.last_position != select_enc.position:
-                (self.highlight, self.shift) = selector_calcs(
+                self.highlight, self.shift = selector_calcs(
                     self.samples,
                     self.highlight,
                     self.shift,
@@ -193,7 +194,7 @@ class SamplerMenuState(State):
                     select_enc.position,
                 )
                 self.last_position = select_enc.position
-            show_menu(self.samples, self.highlight, self.shift)
+                show_menu(self.samples, self.highlight, self.shift)
             key_event = keys.events.get()
             if key_event and key_event.pressed:
                 selection = self.samples[self.highlight - 1 + self.shift]["name"]
@@ -211,9 +212,10 @@ class SamplerMenuState(State):
         for index, seq in enumerate(sequence_array):
             seq_select.append({"name": f"{index}", "pretty": f"{index}: {seq}"})
 
+        show_menu(seq_select, self.highlight, self.shift)
         while True:
             if self.last_position != select_enc.position:
-                (self.highlight, self.shift) = selector_calcs(
+                self.highlight, self.shift = selector_calcs(
                     seq_select,
                     self.highlight,
                     self.shift,
@@ -221,7 +223,7 @@ class SamplerMenuState(State):
                     select_enc.position,
                 )
                 self.last_position = select_enc.position
-            show_menu(seq_select, self.highlight, self.shift)
+                show_menu(seq_select, self.highlight, self.shift)
             key_event = keys.events.get()
             if key_event and key_event.pressed:
 
@@ -236,14 +238,14 @@ class SamplerMenuState(State):
         vel_change = False
         select_position = select_enc.position
         # Display current value
+        text = f"Step {key_val}: {value[key_val][1]:.2f}"
+        text_area = label.Label(terminalio.FONT, text=text, x=2, y=5)
+        display.show(text_area)
         while selection:
-            text = f"Step {key_val}: {value[key_val][1]:.2f}"
-            text_area = label.Label(terminalio.FONT, text=text, x=2, y=5)
-            display.show(text_area)
             key_event = keys.events.get()
 
             # Modify value on encoder input
-            if select_position is not select_enc.position:
+            if select_position != select_enc.position:
                 if select_enc.position < select_position:
                     if value[key_val][1] > min_val + increment:
                         value[key_val][1] = value[key_val][1] - increment
@@ -257,6 +259,9 @@ class SamplerMenuState(State):
                         value[key_val][1] = max_val
                 select_position = select_enc.position
                 vel_change = True
+                text = f"Step {key_val}: {value[key_val][1]:.2f}"
+                text_area = label.Label(terminalio.FONT, text=text, x=2, y=5)
+                display.show(text_area)
 
             # Exit selection menu if key released
             if key_event and key_event.released:
@@ -264,11 +269,6 @@ class SamplerMenuState(State):
                     if not vel_change:
                         value[key_val][0] = not value[key_val][0]
                     selection = False
-
-    def add_sequence(self, fsequences):
-        wav_file = self.select_wav()
-        file_sequences.files.append(wav_file)
-        file_sequences.add_sequence()
 
     def edit_sequence(self, fsequences):
         # Check if sequences exist
@@ -291,7 +291,6 @@ class SamplerMenuState(State):
             display.show(text_area)
 
             file_sequences.show_sequence(selected_sequence)
-            neopixels.show()
 
             while editing_sequence is True:
                 # Code to edit a sequence here
@@ -307,45 +306,6 @@ class SamplerMenuState(State):
                             key,
                         )
                         file_sequences.show_sequence(selected_sequence)
-                        neopixels.show()
-
-                # Exit on click of select encoder
-                key_event = keys.events.get()
-                if key_event and key_event.pressed and key_event.key_number == 10:
-                    # Reset menu status
-                    self.highlight = 1
-                    self.shift = 0
-                    # Exit editing menu
-                    editing_sequence = False
-
-            # Select sequence
-            selected_sequence = self.select_sequence(
-                file_sequences.files
-            )  # Modify to index based on selected
-
-            # Display
-            text = f"Edit {file_sequences.files[selected_sequence]}"
-            text_area = label.Label(terminalio.FONT, text=text, x=2, y=15)
-            display.show(text_area)
-
-            file_sequences.show_sequence(selected_sequence)
-            neopixels.show()
-
-            while editing_sequence is True:
-                # Code to edit a sequence here
-                key_event = keys.events.get()
-                if key_event and key_event.pressed:
-                    key = key_event.key_number
-                    if key >= 0 and key <= 7:
-                        self.sequence_selector(
-                            file_sequences.sequences[selected_sequence],
-                            0,
-                            1,
-                            0.05,
-                            key,
-                        )
-                        file_sequences.show_sequence(selected_sequence)
-                        neopixels.show()
 
                 # Exit on click of select encoder
                 if key_event and key_event.pressed and key_event.key_number == 10:
@@ -399,7 +359,8 @@ class SamplerMenuState(State):
             machine.go_to_state("sequencer_play")
         if selection == "add_sequence":
             wav_file = self.select_wav()
-            file_sequences.add_sequence(wav_file)
+            if wav_file is not None:
+                file_sequences.add_sequence(wav_file)
             show_menu(self.menu_items, self.highlight, self.shift)
 
         if selection == "remove_sequence":
@@ -419,13 +380,34 @@ class SequencerPlayState(State):
     volume = 0.2
     step = 0
     sequencer_mode = "sampler"
-    sampler_files = []
-    sampler_voices = []
     bpm = 300
+
+    def __init__(self):
+        self.audio = None
+        self.mixer = None
+        self.sampler_files = []
+        self.sampler_voices = []
+        State.__init__(self)
 
     @property
     def name(self):
         return "sequencer_play"
+
+    def release_audio(self):
+        """Release the I2S output and any sample files from a previous run."""
+        if self.audio is not None:
+            self.audio.deinit()
+        self.audio = None
+        self.mixer = None
+        for sample_file in self.sampler_files:
+            if sample_file is None:
+                continue
+            try:
+                sample_file.close()
+            except OSError:
+                pass
+        self.sampler_files = []
+        self.sampler_voices = []
 
     def enter(self, machine):
         # Clear key states
@@ -446,7 +428,10 @@ class SequencerPlayState(State):
         # Sampler sequence setup
         elif machine.last_state == "sampler_menu":
             self.sequencer_mode = "sampler"
-            # Setup audio
+            # Setup audio. exit() already releases everything on the way
+            # out, so this is defensive against a future path reaching
+            # enter() without a matching exit().
+            self.release_audio()
             self.audio = audiobusio.I2SOut(board.GP0, board.GP1, board.GP2)
             num_voices = 10
             self.mixer = audiomixer.Mixer(
@@ -457,10 +442,23 @@ class SequencerPlayState(State):
                 samples_signed=True,
             )
 
-            # Load files
+            # Load files. A sample that has been deleted since the sequence
+            # was created, or whose header is malformed, must not take the
+            # badge down mid-set. Voice indices are shared with
+            # file_sequences.sequences, so a failure has to stay in the list
+            # as a None placeholder rather than shifting everything after it.
             for item in file_sequences.files:
-                self.sampler_files.append(open(f"/samples/{item}", "rb"))
-                self.sampler_voices.append(WaveFile(self.sampler_files[-1]))
+                sample_file = None
+                voice = None
+                try:
+                    sample_file = open(f"/samples/{item}", "rb")
+                    voice = WaveFile(sample_file)
+                except (OSError, ValueError):
+                    if sample_file is not None:
+                        sample_file.close()
+                        sample_file = None
+                self.sampler_files.append(sample_file)
+                self.sampler_voices.append(voice)
 
             # Delay to avoid audio click
             time.sleep(0.1)
@@ -468,24 +466,25 @@ class SequencerPlayState(State):
         State.enter(self, machine)
 
     def exit(self, machine):
+        self.release_audio()
         neopixels.fill((255, 0, 0))
+        neopixels.show()
         self.color = (0, 0, 0)
         State.exit(self, machine)
 
     def timed_midi(self):
         current_midi = midi_sequences.sequences[0][self.step]
+        # Sequence entries are [play, note, octave]. send_note_on() and
+        # send_note_off() take a single MIDI note number, so fold the
+        # octave in at twelve semitones each before sending.
+        note = current_midi[1] + (12 * current_midi[2])
         if current_midi[0] is True:
-            send_note_on(current_midi[1], current_midi[2])
+            send_note_on(note)
         step_start = ticks_ms()
         while ticks_ms() < step_start + self.step_length:
             pass
         if current_midi[0] is True:
-            send_note_off(current_midi[1], current_midi[1])
-
-    def play_voices(self):
-        for index, item in enumerate(self.sampler_voices):
-            self.mixer.voice[index].level = self.volume  # * sample volume
-            self.mixer.voice[index].play(item)
+            send_note_off(note)
 
     def stop_voices(self):
         for index, item in enumerate(self.sampler_voices):
@@ -495,6 +494,10 @@ class SequencerPlayState(State):
         # Play
         for index, sequence in enumerate(file_sequences.sequences):
             if sequence[self.step][0] is True:
+                # Placeholder for a sample that failed to load: leave the
+                # voice silent rather than playing the wrong track's sound.
+                if self.sampler_voices[index] is None:
+                    continue
                 self.mixer.voice[index].level = self.volume * sequence[self.step][1]
                 self.mixer.voice[index].play(self.sampler_voices[index])
         step_start = ticks_ms()
@@ -505,7 +508,7 @@ class SequencerPlayState(State):
 
     def adjust_bpm(self):
         # Adjust bpm if select_enc state changes
-        if self.select_position is not select_enc.position:
+        if self.select_position != select_enc.position:
             diff = abs(select_enc.position - self.select_position)
             if select_enc.position < self.select_position:
                 if self.bpm >= (20 + diff):
@@ -524,11 +527,8 @@ class SequencerPlayState(State):
             # display.show(text_area)
 
     def adjust_volume(self):
-        self.audio.stop()
-        while self.audio.playing:
-            pass
         # Adjust volume if volume_enc state changes
-        if self.volume_position is not volume_enc.position:
+        if self.volume_position != volume_enc.position:
             if volume_enc.position < self.volume_position:
                 if self.volume >= 0.05:
                     self.volume = self.volume - 0.05
@@ -544,17 +544,12 @@ class SequencerPlayState(State):
             # text = f"Volume: {self.volume}"
             # text_area = label.Label(terminalio.FONT, text=text, x=2, y=10)
             # display.show(text_area)
-        self.audio.play(self.mixer)
 
     def key_check(self, state_machine):
         key_event = keys.events.get()
         if key_event and key_event.pressed:
             # Return to sequencer menu if select pressed
             if key_event.key_number == 10:
-                try:
-                    self.audio.deinit()
-                except:
-                    pass
                 keys.events.clear()
                 if self.sequencer_mode == "midi":
                     state_machine.go_to_state("sequencer_menu")

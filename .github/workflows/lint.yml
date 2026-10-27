@@ -1,4 +1,4 @@
-name: flake8 Lint
+name: CI
 
 on:
   push:
@@ -12,10 +12,10 @@ jobs:
     name: Lint
     steps:
       - name: Check out source repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Set up Python environment
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
@@ -23,22 +23,82 @@ jobs:
         uses: py-actions/flake8@v2
         with:
             path: "./Software/Testing"
-            ignore: "E501,E203,E722" #Ignore line to long, we don't care
+            # W503 contradicts black, which puts operators at line start.
+            # flake8's --ignore replaces its defaults, where W503 already sits,
+            # so it has to be listed explicitly to stay ignored.
+            ignore: "E501,E203,E722,W503" #Ignore line to long, we don't care
 
       - name: Black File Formatter
         uses: psf/black@stable
         with:
           options: "--check --verbose"
           src: "./Software/Testing"
+          version: "26.5.1"
 
       - name: Flake8 Lint Production
         uses: py-actions/flake8@v2
         with:
             path: "./Software/Production"
-            ignore: "E501,E203,E722" #Ignore line to long, we don't care
+            ignore: "E501,E203,E722,W503" #Ignore line to long, we don't care
 
       - name: Black File Formatter Production
         uses: psf/black@stable
         with:
           options: "--check --verbose"
           src: "./Software/Production"
+          version: "26.5.1"
+
+      - name: Flake8 Lint Tests and Tools
+        uses: py-actions/flake8@v2
+        with:
+            path: "./tests"
+            ignore: "E501,E203,E722,W503"
+
+      - name: Black File Formatter Tests and Tools
+        uses: psf/black@stable
+        with:
+          options: "--check --verbose"
+          src: "./tests ./Tools"
+          version: "26.5.1"
+
+  test:
+    runs-on: ubuntu-latest
+    name: Tests
+    steps:
+      - name: Check out source repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python environment
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependencies
+        run: pip install pytest pytest-cov
+
+      # Software/Production targets CircuitPython and cannot be imported on a
+      # desktop Python. tests/circuitpython_stubs.py fakes board, busio,
+      # neopixel and the rest so the firmware can be imported and driven here.
+      - name: Run tests with coverage
+        run: |
+          pytest tests/ -v \
+            --cov=Software/Production \
+            --cov-report=term-missing
+
+  compile:
+    runs-on: ubuntu-latest
+    name: Byte-compile
+    steps:
+      - name: Check out source repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python environment
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      # Catches syntax errors before a badge is flashed with firmware that
+      # cannot start. This checks syntax only; CircuitPython's runtime API is
+      # not available here, which is what the stubbed tests above are for.
+      - name: Byte-compile every module
+        run: python -m compileall -q Software/Production Software/Testing Tools tests
